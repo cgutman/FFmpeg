@@ -694,6 +694,7 @@ static int ffmmal_read_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
         // We also wait if we sent eos, but didn't receive it yet (think of decoding
         // stream with a very low number of frames).
         if (atomic_load(&ctx->packets_buffered) > MAX_DELAYED_FRAMES ||
+            (avctx->flags & AV_CODEC_FLAG_LOW_DELAY) ||
             (ctx->packets_sent && ctx->eos_sent)) {
             // MMAL will ignore broken input packets, which means the frame we
             // expect here may never arrive. Dealing with this correctly is
