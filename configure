@@ -1845,7 +1845,6 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
     videotoolbox
     v4l2_m2m
     xvmc
-    nvmpi
 "
 
 # catchall list of things that require external libs to link
@@ -1868,6 +1867,7 @@ HWACCEL_LIBRARY_LIST="
     opencl
     v4l2_request
     vulkan
+    nvmpi
 "
 
 DOCUMENT_LIST="
