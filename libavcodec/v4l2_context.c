@@ -522,6 +522,8 @@ static inline int v4l2_try_raw_format(V4L2Context* ctx, enum AVPixelFormat pixfm
 
 static int v4l2_get_raw_format(V4L2Context* ctx, enum AVPixelFormat *p)
 {
+    V4L2m2mContext* s = ctx_to_m2mctx(ctx);
+    V4L2m2mPriv *priv = s->avctx->priv_data;
     enum AVPixelFormat pixfmt = ctx->av_pix_fmt;
     struct v4l2_fmtdesc fdesc;
     int ret;
@@ -541,6 +543,11 @@ static int v4l2_get_raw_format(V4L2Context* ctx, enum AVPixelFormat *p)
             return AVERROR(EINVAL);
 
         pixfmt = ff_v4l2_format_v4l2_to_avfmt(fdesc.pixelformat, AV_CODEC_ID_RAWVIDEO);
+        if (priv->pix_fmt != AV_PIX_FMT_NONE && priv->pix_fmt != pixfmt) {
+            fdesc.index++;
+            continue;
+        }
+
         ret = v4l2_try_raw_format(ctx, pixfmt);
         if (ret){
             fdesc.index++;
