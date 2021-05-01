@@ -19,6 +19,7 @@ HEADERS = ac3_parser.h                                                  \
           mediacodec.h                                                  \
           packet.h                                                      \
           qsv.h                                                         \
+          rpi_zc.h                                                      \
           vaapi.h                                                       \
           vdpau.h                                                       \
           version.h                                                     \
@@ -138,6 +139,7 @@ OBJS-$(CONFIG_QSVDEC)                  += qsvdec.o
 OBJS-$(CONFIG_QSVENC)                  += qsvenc.o
 OBJS-$(CONFIG_RANGECODER)              += rangecoder.o
 OBJS-$(CONFIG_RDFT)                    += rdft.o
+OBJS-$(CONFIG_RPI)                     += rpi_qpu.o rpi_mailbox.o rpi_zc.o
 OBJS-$(CONFIG_RV34DSP)                 += rv34dsp.o
 OBJS-$(CONFIG_SHARED)                  += log2_tab.o reverse.o
 OBJS-$(CONFIG_SINEWIN)                 += sinewin.o sinewin_fixed.o
@@ -153,6 +155,7 @@ OBJS-$(CONFIG_VP3DSP)                  += vp3dsp.o
 OBJS-$(CONFIG_VP56DSP)                 += vp56dsp.o
 OBJS-$(CONFIG_VP8DSP)                  += vp8dsp.o
 OBJS-$(CONFIG_V4L2_M2M)                += v4l2_m2m.o v4l2_context.o v4l2_buffers.o v4l2_fmt.o
+OBJS-$(CONFIG_V4L2_REQUEST)            += v4l2_request.o v4l2_phase.o
 OBJS-$(CONFIG_WMA_FREQS)               += wma_freqs.o
 OBJS-$(CONFIG_WMV2DSP)                 += wmv2dsp.o
 
@@ -381,6 +384,15 @@ OBJS-$(CONFIG_HCOM_DECODER)            += hcom.o
 OBJS-$(CONFIG_HEVC_DECODER)            += hevcdec.o hevc_mvs.o \
                                           hevc_cabac.o hevc_refs.o hevcpred.o    \
                                           hevcdsp.o hevc_filter.o hevc_data.o
+OBJS-$(CONFIG_RPI)                     += rpi_mem.o \
+                                          rpi_mailbox.o rpi_zc.o
+OBJS-$(CONFIG_HEVC_RPI_DECODER)        += rpi_hevcdec.o rpi_hevc_mvs.o \
+                                          rpi_hevc_cabac.o rpi_hevc_refs.o rpi_hevcpred.o    \
+                                          rpi_hevcdsp.o rpi_hevc_filter.o rpi_hevc_data.o    \
+                                          rpi_hevc_shader.o rpi_hevc_shader_template.o       \
+                                          rpi_hevc_parse.o h2645_parse.o rpi_hevc_ps.o \
+                                          rpi_hevc_sei.o rpi_hevc_data.o rpi_qpu.o rpi_mem.o
+OBJS-$(CONFIG_HEVC_CUVID_DECODER)      += cuvid.o
 OBJS-$(CONFIG_HEVC_AMF_ENCODER)        += amfenc_hevc.o
 OBJS-$(CONFIG_HEVC_CUVID_DECODER)      += cuviddec.o
 OBJS-$(CONFIG_HEVC_MEDIACODEC_DECODER) += mediacodecdec.o
@@ -902,6 +914,7 @@ OBJS-$(CONFIG_H264_D3D11VA_HWACCEL)       += dxva2_h264.o
 OBJS-$(CONFIG_H264_DXVA2_HWACCEL)         += dxva2_h264.o
 OBJS-$(CONFIG_H264_NVDEC_HWACCEL)         += nvdec_h264.o
 OBJS-$(CONFIG_H264_QSV_HWACCEL)           += qsvdec_h2645.o
+OBJS-$(CONFIG_H264_V4L2REQUEST_HWACCEL)   += v4l2_request_h264.o
 OBJS-$(CONFIG_H264_VAAPI_HWACCEL)         += vaapi_h264.o
 OBJS-$(CONFIG_H264_VDPAU_HWACCEL)         += vdpau_h264.o
 OBJS-$(CONFIG_H264_VIDEOTOOLBOX_HWACCEL)  += videotoolbox.o
@@ -909,8 +922,11 @@ OBJS-$(CONFIG_HEVC_D3D11VA_HWACCEL)       += dxva2_hevc.o
 OBJS-$(CONFIG_HEVC_DXVA2_HWACCEL)         += dxva2_hevc.o
 OBJS-$(CONFIG_HEVC_NVDEC_HWACCEL)         += nvdec_hevc.o
 OBJS-$(CONFIG_HEVC_QSV_HWACCEL)           += qsvdec_h2645.o
+OBJS-$(CONFIG_HEVC_V4L2REQUEST_HWACCEL)   += v4l2_request_hevc.o
 OBJS-$(CONFIG_HEVC_VAAPI_HWACCEL)         += vaapi_hevc.o h265_profile_level.o
 OBJS-$(CONFIG_HEVC_VDPAU_HWACCEL)         += vdpau_hevc.o
+OBJS-$(CONFIG_HEVC_RPI4_8_HWACCEL)        += rpivid_hevc.o
+OBJS-$(CONFIG_HEVC_RPI4_10_HWACCEL)       += rpivid_hevc.o
 OBJS-$(CONFIG_MJPEG_NVDEC_HWACCEL)        += nvdec_mjpeg.o
 OBJS-$(CONFIG_MJPEG_VAAPI_HWACCEL)        += vaapi_mjpeg.o
 OBJS-$(CONFIG_MPEG1_NVDEC_HWACCEL)        += nvdec_mpeg12.o
@@ -921,6 +937,7 @@ OBJS-$(CONFIG_MPEG2_D3D11VA_HWACCEL)      += dxva2_mpeg2.o
 OBJS-$(CONFIG_MPEG2_DXVA2_HWACCEL)        += dxva2_mpeg2.o
 OBJS-$(CONFIG_MPEG2_NVDEC_HWACCEL)        += nvdec_mpeg12.o
 OBJS-$(CONFIG_MPEG2_QSV_HWACCEL)          += qsvdec_other.o
+OBJS-$(CONFIG_MPEG2_V4L2REQUEST_HWACCEL)  += v4l2_request_mpeg2.o
 OBJS-$(CONFIG_MPEG2_VAAPI_HWACCEL)        += vaapi_mpeg2.o
 OBJS-$(CONFIG_MPEG2_VDPAU_HWACCEL)        += vdpau_mpeg12.o
 OBJS-$(CONFIG_MPEG2_VIDEOTOOLBOX_HWACCEL) += videotoolbox.o
@@ -936,10 +953,12 @@ OBJS-$(CONFIG_VC1_QSV_HWACCEL)            += qsvdec_other.o
 OBJS-$(CONFIG_VC1_VAAPI_HWACCEL)          += vaapi_vc1.o
 OBJS-$(CONFIG_VC1_VDPAU_HWACCEL)          += vdpau_vc1.o
 OBJS-$(CONFIG_VP8_NVDEC_HWACCEL)          += nvdec_vp8.o
+OBJS-$(CONFIG_VP8_V4L2REQUEST_HWACCEL)    += v4l2_request_vp8.o
 OBJS-$(CONFIG_VP8_VAAPI_HWACCEL)          += vaapi_vp8.o
 OBJS-$(CONFIG_VP9_D3D11VA_HWACCEL)        += dxva2_vp9.o
 OBJS-$(CONFIG_VP9_DXVA2_HWACCEL)          += dxva2_vp9.o
 OBJS-$(CONFIG_VP9_NVDEC_HWACCEL)          += nvdec_vp9.o
+OBJS-$(CONFIG_VP9_V4L2REQUEST_HWACCEL)    += v4l2_request_vp9.o
 OBJS-$(CONFIG_VP9_VAAPI_HWACCEL)          += vaapi_vp9.o
 OBJS-$(CONFIG_VP9_VDPAU_HWACCEL)          += vdpau_vp9.o
 OBJS-$(CONFIG_VP8_QSV_HWACCEL)            += qsvdec_other.o
@@ -1260,4 +1279,32 @@ $(SUBDIR)pcm.o: $(SUBDIR)pcm_tables.h
 $(SUBDIR)qdm2.o: $(SUBDIR)qdm2_tables.h
 $(SUBDIR)sinewin.o: $(SUBDIR)sinewin_tables.h
 $(SUBDIR)sinewin_fixed.o: $(SUBDIR)sinewin_fixed_tables.h
+endif
+
+ifdef CONFIG_HEVC_RPI_DECODER
+QASM_PY := ../local/bin/qasm.py
+VASMVIDCORE := ../local/bin/vasmvidcore_std
+
+ifneq ("$(wildcard $(QASM_PY))","")
+$(SUBDIR)rpi_hevc_shader.c: $(SUBDIR)rpi_hevc_shader.qasm
+	$(QASM_PY) -mc_c:rpi_hevc_shader,rpi_hevc_shader,ff_hevc_rpi_shader $< > $@
+
+$(SUBDIR)rpi_hevc_shader.h: $(SUBDIR)rpi_hevc_shader.qasm
+	$(QASM_PY) -mc_h:rpi_hevc_shader,rpi_hevc_shader,ff_hevc_rpi_shader $< > $@
+endif
+
+ifneq ("$(wildcard $(VASMVIDCORE))","")
+$(SUBDIR)rpi_hevc_transform8.bin: $(SUBDIR)rpi_hevc_transform.s
+	$(VASMVIDCORE) -Fbin -DBIT_DEPTH=8 $< -o $@
+$(SUBDIR)rpi_hevc_transform10.bin: $(SUBDIR)rpi_hevc_transform.s
+	$(VASMVIDCORE) -Fbin -DBIT_DEPTH=10 $< -o $@
+
+$(SUBDIR)rpi_hevc_transform8.h: $(SUBDIR)rpi_hevc_transform8.bin
+	python pi-util/make_array.py $<
+$(SUBDIR)rpi_hevc_transform10.h: $(SUBDIR)rpi_hevc_transform10.bin
+	python pi-util/make_array.py $<
+endif
+
+$(SUBDIR)rpi_qpu.o: $(SUBDIR)rpi_hevc_transform8.h $(SUBDIR)rpi_hevc_transform10.h
+$(SUBDIR)rpi_hevcdec.o $(SUBDIR)rpi_shader_template.o $(SUBDIR)rpi_qpu.o: $(SUBDIR)rpi_hevc_shader.h
 endif
