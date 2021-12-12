@@ -152,8 +152,12 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         av_packet_move_ref(&avpkt, &s->buf_pkt);
     } else {
         ret = ff_decode_get_packet(avctx, &avpkt);
-        if (ret < 0 && ret != AVERROR_EOF)
-            return ret;
+        if (ret < 0) {
+            if (ret == AVERROR(EAGAIN))
+                return ff_v4l2_context_dequeue_frame(capture, frame, 0);
+            else if (ret != AVERROR_EOF)
+                return ret;
+        }
     }
 
     if (s->draining)
