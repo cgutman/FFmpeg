@@ -30,6 +30,7 @@
 #include <linux/videodev2.h>
 
 #include "libavcodec/avcodec.h"
+#include "libavutil/pixfmt.h"
 #include "v4l2_context.h"
 
 #define container_of(ptr, type, member) ({ \
@@ -38,7 +39,28 @@
 
 #define V4L_M2M_DEFAULT_OPTS \
     { "num_output_buffers", "Number of buffers in the output context",\
-        OFFSET(num_output_buffers), AV_OPT_TYPE_INT, { .i64 = 16 }, 6, INT_MAX, FLAGS }
+        OFFSET(num_output_buffers), AV_OPT_TYPE_INT, { .i64 = 16 }, 2, INT_MAX, FLAGS }
+
+#define FF_V4L2_M2M_TRACK_SIZE 128
+typedef struct V4L2m2mTrackEl {
+    int     discard;   // If we see this buffer its been flushed, so discard
+    int     pkt_size;
+    int64_t pts;
+    int64_t reordered_opaque;
+    int64_t pkt_pos;
+    int64_t pkt_duration;
+    int64_t track_pts;
+} V4L2m2mTrackEl;
+
+typedef struct pts_stats_s
+{
+    void * logctx;
+    const char * name;  // For debug
+    unsigned int last_count;
+    unsigned int last_interval;
+    int64_t last_pts;
+    int64_t guess;
+} pts_stats_t;
 
 typedef struct V4L2m2mContext {
     char devname[PATH_MAX];
@@ -53,6 +75,7 @@ typedef struct V4L2m2mContext {
     sem_t refsync;
     atomic_uint refcount;
     int reinit;
+    int resize_pending;
 
     /* null frame/packet received */
     int draining;
@@ -66,6 +89,25 @@ typedef struct V4L2m2mContext {
 
     /* reference back to V4L2m2mPriv */
     void *priv;
+
+    AVBufferRef *device_ref;
+
+    /* generate DRM frames */
+    int output_drm;
+
+    /* Frame tracking */
+    int64_t last_pkt_dts;
+    int64_t last_opaque;
+    unsigned int track_no;
+    V4L2m2mTrackEl track_els[FF_V4L2_M2M_TRACK_SIZE];
+
+    pts_stats_t pts_stat;
+
+    /* req pkt */
+    int req_pkt;
+
+    /* Ext data sent */
+    int extdata_sent;
 } V4L2m2mContext;
 
 typedef struct V4L2m2mPriv {
@@ -76,6 +118,7 @@ typedef struct V4L2m2mPriv {
 
     int num_output_buffers;
     int num_capture_buffers;
+    enum AVPixelFormat pix_fmt;
 } V4L2m2mPriv;
 
 /**
@@ -128,5 +171,17 @@ int ff_v4l2_m2m_codec_reinit(V4L2m2mContext *ctx);
  * @returns 0 in case of success, negative number otherwise
  */
 int ff_v4l2_m2m_codec_full_reinit(V4L2m2mContext *ctx);
+
+
+static inline unsigned int ff_v4l2_get_format_width(struct v4l2_format *fmt)
+{
+    return V4L2_TYPE_IS_MULTIPLANAR(fmt->type) ? fmt->fmt.pix_mp.width : fmt->fmt.pix.width;
+}
+
+static inline unsigned int ff_v4l2_get_format_height(struct v4l2_format *fmt)
+{
+    return V4L2_TYPE_IS_MULTIPLANAR(fmt->type) ? fmt->fmt.pix_mp.height : fmt->fmt.pix.height;
+}
+
 
 #endif /* AVCODEC_V4L2_M2M_H */
