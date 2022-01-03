@@ -3445,6 +3445,10 @@ static int vulkan_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
 #endif
 #endif
     default:
+        if (dst->format == AV_PIX_FMT_NONE)
+            dst->format = hwfc->sw_format;
+        else if (hwfc->sw_format != dst->format)
+            return AVERROR(ENOSYS);
         return vulkan_map_frame_to_mem(hwfc, dst, src, flags);
     }
 }
