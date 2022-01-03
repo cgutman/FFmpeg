@@ -2801,12 +2801,24 @@ fail:
 static int opencl_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
                            const AVFrame *src, int flags)
 {
+    int err;
+
     av_assert0(src->format == AV_PIX_FMT_OPENCL);
+
     if (dst->format == AV_PIX_FMT_NONE)
         dst->format = hwfc->sw_format;
     else if (hwfc->sw_format != dst->format)
         return AVERROR(ENOSYS);
-    return opencl_map_frame(hwfc, dst, src, flags);
+
+    err = opencl_map_frame(hwfc, dst, src, flags);
+    if (err)
+        return err;
+
+    err = av_frame_copy_props(dst, src);
+    if (err)
+        return err;
+
+    return 0;
 }
 
 static int opencl_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
