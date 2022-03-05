@@ -336,6 +336,7 @@ External library support:
   --enable-cuda-nvcc       enable Nvidia CUDA compiler [no]
   --disable-cuda-llvm      disable CUDA compilation using clang [autodetect]
   --disable-cuvid          disable Nvidia CUVID support [autodetect]
+  --enable-nvv4l2          enable Nvidia Tegra NVV4L2 support [no]
   --disable-d3d11va        disable Microsoft Direct3D 11 video acceleration code [autodetect]
   --disable-dxva2          disable Microsoft DirectX 9 video acceleration code [autodetect]
   --disable-ffnvcodec      disable dynamically linked Nvidia code [autodetect]
@@ -1899,6 +1900,7 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
     ffnvcodec
     nvdec
     nvenc
+    nvv4l2
     vaapi
     vdpau
     videotoolbox
@@ -3141,6 +3143,8 @@ qsvenc_select="qsv"
 qsvvpp_select="qsv"
 vaapi_encode_deps="vaapi"
 v4l2_m2m_deps="linux_videodev2_h sem_timedwait"
+nvv4l2_deps="libv4l2 pthreads linux_videodev2_h nvbuf_utils_h v4l2_nv_extensions_h"
+nvv4l2_extralibs="-lnvbuf_utils"
 
 chromakey_cuda_filter_deps="ffnvcodec"
 chromakey_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
@@ -3159,6 +3163,9 @@ sharpen_npp_filter_deps="ffnvcodec libnpp"
 amf_deps_any="libdl LoadLibrary"
 nvenc_deps="ffnvcodec"
 nvenc_deps_any="libdl LoadLibrary"
+h264_nvv4l2_encoder_deps="nvv4l2"
+h264_nvv4l2_decoder_deps="nvv4l2"
+h264_nvv4l2_decoder_select="h264_mp4toannexb_bsf"
 
 aac_mf_encoder_deps="mediafoundation"
 ac3_mf_encoder_deps="mediafoundation"
@@ -3191,6 +3198,9 @@ hevc_mediacodec_decoder_deps="mediacodec"
 hevc_mediacodec_decoder_select="hevc_mp4toannexb_bsf hevc_parser"
 hevc_mf_encoder_deps="mediafoundation"
 hevc_nvenc_encoder_deps="nvenc"
+hevc_nvv4l2_encoder_deps="nvv4l2"
+hevc_nvv4l2_decoder_deps="nvv4l2"
+hevc_nvv4l2_decoder_select="hevc_mp4toannexb_bsf"
 hevc_nvenc_encoder_select="atsc_a53"
 hevc_qsv_decoder_select="hevc_mp4toannexb_bsf qsvdec"
 hevc_qsv_encoder_select="hevcparse qsvenc"
@@ -3214,6 +3224,7 @@ mpeg2_crystalhd_decoder_select="crystalhd"
 mpeg2_cuvid_decoder_deps="cuvid"
 mpeg2_mmal_decoder_deps="mmal"
 mpeg2_mediacodec_decoder_deps="mediacodec"
+mpeg2_nvv4l2_decoder_deps="nvv4l2"
 mpeg2_qsv_decoder_select="qsvdec"
 mpeg2_qsv_encoder_select="qsvenc"
 mpeg2_vaapi_encoder_select="cbs_mpeg2 vaapi_encode"
@@ -3222,6 +3233,7 @@ mpeg4_crystalhd_decoder_select="crystalhd"
 mpeg4_cuvid_decoder_deps="cuvid"
 mpeg4_mediacodec_decoder_deps="mediacodec"
 mpeg4_mmal_decoder_deps="mmal"
+mpeg4_nvv4l2_decoder_deps="nvv4l2"
 mpeg4_omx_encoder_deps="omx"
 mpeg4_v4l2m2m_decoder_deps="v4l2_m2m mpeg4_v4l2_m2m"
 mpeg4_v4l2m2m_encoder_deps="v4l2_m2m mpeg4_v4l2_m2m"
@@ -3233,6 +3245,7 @@ vc1_qsv_decoder_select="qsvdec"
 vc1_v4l2m2m_decoder_deps="v4l2_m2m vc1_v4l2_m2m"
 vp8_cuvid_decoder_deps="cuvid"
 vp8_mediacodec_decoder_deps="mediacodec"
+vp8_nvv4l2_decoder_deps="nvv4l2"
 vp8_qsv_decoder_select="qsvdec"
 vp8_rkmpp_decoder_deps="rkmpp"
 vp8_vaapi_encoder_deps="VAEncPictureParameterBufferVP8"
@@ -3241,6 +3254,7 @@ vp8_v4l2m2m_decoder_deps="v4l2_m2m vp8_v4l2_m2m"
 vp8_v4l2m2m_encoder_deps="v4l2_m2m vp8_v4l2_m2m"
 vp9_cuvid_decoder_deps="cuvid"
 vp9_mediacodec_decoder_deps="mediacodec"
+vp9_nvv4l2_decoder_deps="nvv4l2"
 vp9_qsv_decoder_select="qsvdec"
 vp9_rkmpp_decoder_deps="rkmpp"
 vp9_vaapi_encoder_deps="VAEncPictureParameterBufferVP9"
@@ -3527,6 +3541,7 @@ kmsgrab_indev_deps="libdrm"
 lavfi_indev_deps="avfilter"
 libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
+nvv4l2_indev_deps="v4l2"
 openal_indev_deps="openal"
 opengl_outdev_deps="opengl"
 opengl_outdev_suggest="sdl2"
@@ -6990,6 +7005,13 @@ EOF
 if enabled_any nvdec cuvid; then
     check_type "ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h" "CUVIDAV1PICPARAMS"
 fi
+
+enabled nvv4l2 && add_cflags '-I/usr/src/jetson_multimedia_api/include' \
+               && add_ldflags '-L/usr/lib/aarch64-linux-gnu/tegra' \
+               && check_headers linux/videodev2.h \
+               && require_headers "v4l2_nv_extensions.h" \
+               && require_headers "nvbuf_utils.h" \
+               && require_pkg_config libv4l2 libv4l2 libv4l2.h v4l2_ioctl
 
 enabled amf &&
     check_cpp_condition amf "AMF/core/Version.h" \
