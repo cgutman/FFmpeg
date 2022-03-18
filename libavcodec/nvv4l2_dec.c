@@ -160,8 +160,11 @@ static void query_set_capture(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
         return;
     }
 
-    ctx->codec_height = crop.c.height;
+    av_log(avctx, AV_LOG_VERBOSE, "Resolution changed to: %dx%d\n",
+           crop.c.width, crop.c.height);
+
     ctx->codec_width = crop.c.width;
+    ctx->codec_height = crop.c.height;
 
     for (uint32_t i = 0; i < NV_MAX_BUFFERS; i++) {
         if (ctx->plane_dma_fd[i] != -1) {
@@ -169,6 +172,17 @@ static void query_set_capture(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
             ctx->plane_dma_fd[i] = -1;
         }
     }
+
+    /*
+     ** Due to VIC constrains the transformation from Block Linear to Pitch
+     ** must have aligned widths to 64B. Otherwise the frame might be produced
+     ** as scrambled.
+     */
+    ctx->plane_width_aligned = NVALIGN(crop.c.width, 64);
+    if (ctx->plane_width_aligned != crop.c.width)
+        av_log(avctx, AV_LOG_VERBOSE, "Linesize got aligned: %d -> %d\n",
+           crop.c.width, ctx->plane_width_aligned);
+    crop.c.width = ctx->plane_width_aligned;
 
     /* Create transform/export DMA buffers. */
     for (uint32_t i = 0; i < NV_MAX_BUFFERS; i++) {
@@ -1041,6 +1055,11 @@ nvv4l2dec_decode(AVCodecContext *avctx, void *data, int *got_frame,
     /* Get a decoded frame if any. */
     if (nvv4l2_decoder_get_frame(avctx, ctx, &buf_index, &_nvframe))
         return processed_size;
+
+    /* Set coded width to aligned size to fit the transformation.
+     ** It gets restored after transformation by default.
+     */
+    avctx->coded_width = ctx->plane_width_aligned;
 
     /* Get frame data buffers. */
     if (ff_get_buffer(avctx, avframe, 0) < 0)
