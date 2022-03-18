@@ -176,11 +176,18 @@ static void query_set_capture(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
         input_params.height = crop.c.height;
         input_params.layout = NvBufferLayout_Pitch;
         input_params.payloadType = NvBufferPayload_SurfArray;
-        input_params.colorFormat =
-                 ctx->cp_pixfmt == V4L2_PIX_FMT_NV12M ?
-                                   NvBufferColorFormat_NV12 :
-                                   NvBufferColorFormat_YUV420;
         input_params.nvbuf_tag = NvBufferTag_VIDEO_DEC;
+
+        switch (ctx->cp_pixfmt) {
+        case V4L2_PIX_FMT_YUV420M:
+            input_params.colorFormat = NvBufferColorFormat_YUV420;
+            break;
+        case V4L2_PIX_FMT_NV12M:
+            input_params.colorFormat = NvBufferColorFormat_NV12;
+            if (ctx->pixfmt_list_ver == NvBufferPixFmtVersion_New)
+                input_params.colorFormat++;
+            break;
+        }
 
         ret = NvBufferCreateEx(&ctx->plane_dma_fd[i], &input_params);
         if (ret) {
@@ -260,6 +267,10 @@ static void query_set_capture(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
             "Colorspace ITU-R BT.601 with extended range luma (0-255)\n");
         cap_params.colorFormat = NvBufferColorFormat_NV12_ER;
     }
+
+    /* Increment color format if NvBuffer is newer. */
+    if (ctx->pixfmt_list_ver == NvBufferPixFmtVersion_New)
+        cap_params.colorFormat++;
 
     /* Request number of buffers returned by ctrl, plus 10 more. */
     ctx->cp_num_buffers = min_cap_buffers + 10;
@@ -664,6 +675,9 @@ nvv4l2_ctx_t *nvv4l2_create_decoder(AVCodecContext *avctx,
     /* Initialization. */
     ctx->cp_pixfmt = pix_fmt;
     ctx->op_pixfmt = nvv4l2_map_nvcodec_type(nv_codec_type);
+
+    /* Get NvBuffer pixel format list version */
+    ctx->pixfmt_list_ver = nvv4l2_get_pixfmt_list_version(ctx);
 
     /* Decoder code assumes that the following do not change.
      ** If another memory type is wanted, relevant changes should be done

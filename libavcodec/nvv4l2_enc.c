@@ -269,6 +269,9 @@ nvv4l2_ctx_t *nvv4l2_create_encoder(AVCodecContext *avctx,
     ctx->op_pixfmt = pix_fmt;
     ctx->cp_pixfmt = nvv4l2_map_nvcodec_type(nv_codec_type);
 
+    /* Get NvBuffer pixel format list version */
+    ctx->pixfmt_list_ver = nvv4l2_get_pixfmt_list_version(ctx);
+
     /* Encoder code assumes that the following do not change.
      ** If another memory type is wanted, relevant changes should be done
      ** to the rest of the code.
@@ -525,6 +528,12 @@ nvv4l2_ctx_t *nvv4l2_create_encoder(AVCodecContext *avctx,
         if (ctx->enc->profile == V4L2_MPEG_VIDEO_H265_PROFILE_MAIN10) {
             iParams.layout = NvBufferLayout_BlockLinear;
             iParams.colorFormat = NvBufferColorFormat_NV12_10LE;
+        }
+
+        /* Increment color format if NvBuffer is newer. */
+        if (ctx->pixfmt_list_ver == NvBufferPixFmtVersion_New &&
+             iParams.colorFormat > NvBufferColorFormat_YUV420) {
+            iParams.colorFormat++;
         }
 
         ret = NvBufferCreateEx(&ctx->plane_dma_fd[i], &iParams);
