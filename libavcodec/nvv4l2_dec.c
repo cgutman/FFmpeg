@@ -472,8 +472,6 @@ static void *dec_capture_thread(void *arg)
             dest_rect.width = ctx->codec_width;
             dest_rect.height = ctx->codec_height;
 
-            memset(&transform_params, 0, sizeof(transform_params));
-
             /* @transform_flag defines the flags for enabling the
              ** valid transforms. All the valid parameters are
              **  present in the nvv4l2_ext_utils header.
@@ -484,6 +482,7 @@ static void *dec_capture_thread(void *arg)
                                             NvBufferTransform_Filter_Smart;
             transform_params.src_rect = src_rect;
             transform_params.dst_rect = dest_rect;
+            transform_params.session = ctx->buf_session;
 
             pthread_mutex_lock(&ctx->queue_lock);
 
@@ -704,6 +703,9 @@ nvv4l2_ctx_t *nvv4l2_create_decoder(AVCodecContext *avctx,
     /* Get NvBuffer pixel format list version */
     ctx->pixfmt_list_ver = nvv4l2_get_pixfmt_list_version(ctx);
 
+    /* Get a NvBuffer session for interprocess transforms */
+    ctx->buf_session = NvBufferSessionCreate();
+
     /* Decoder code assumes that the following do not change.
      ** If another memory type is wanted, relevant changes should be done
      ** to the rest of the code.
@@ -857,6 +859,10 @@ int nvv4l2_decoder_close(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
                 ctx->plane_dma_fd[i] = -1;
             }
         }
+
+        /* Destroy NvBuffer session. */
+        if (ctx->buf_session)
+            NvBufferSessionDestroy(ctx->buf_session);
 
         NVFREE(ctx->export_pool);
 
