@@ -417,7 +417,8 @@ static void *dec_capture_thread(void *arg)
             break;
         }
     }
-    while ((event.type != V4L2_EVENT_RESOLUTION_CHANGE) && !ctx->in_error);
+    while ((event.type != V4L2_EVENT_RESOLUTION_CHANGE) &&
+           !ctx->in_error && !ctx->eos);
 
     /* Received first resolution change event
      ** Format and buffers are now set on capture.
@@ -816,6 +817,8 @@ int nvv4l2_decoder_close(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
         /* Stop streaming on both planes. */
         ret = v4l2_ioctl(ctx->fd, VIDIOC_STREAMOFF, &ctx->op_buf_type);
         ret = v4l2_ioctl(ctx->fd, VIDIOC_STREAMOFF, &ctx->cp_buf_type);
+        ctx->op_streamon = false;
+        ctx->cp_streamon = false;
 
         /* Wait for capture thread to exit. */
         if (ctx->capture_thread) {
