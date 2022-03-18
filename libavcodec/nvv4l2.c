@@ -513,9 +513,9 @@ nvv4l2_q_buffer(nvv4l2_ctx_t *ctx, struct v4l2_buffer *v4l2_buf,
 
     pthread_mutex_lock(&ctx->queue_lock);
 
-    if (buf_type == ctx->op_buf_type)
+    if (!buffer && buf_type == ctx->op_buf_type)
         buffer = ctx->op_buffers[v4l2_buf->index];
-    else if (buf_type == ctx->cp_buf_type)
+    else if (!buffer && buf_type == ctx->cp_buf_type)
         buffer = ctx->cp_buffers[v4l2_buf->index];
 
     v4l2_buf->type = buf_type;
@@ -810,7 +810,57 @@ nvv4l2_dbg_plane_supported_formats(nvv4l2_ctx_t *ctx,
             break;
 
         memcpy(fourcc, &fdesc.pixelformat, 4);
-        av_log(ctx->avctx, AV_LOG_INFO, "%d: %s (%s)\n", fdesc.index, fourcc, fdesc.description);
+        av_log(ctx->avctx, AV_LOG_INFO, "%d: %s (%s)\n",
+               fdesc.index, fourcc, fdesc.description);
         fdesc.index++;
     }
+}
+
+NvBufferPixFmtVersion
+nvv4l2_get_pixfmt_list_version(nvv4l2_ctx_t *ctx)
+{
+    NvBufferParams params;
+    NvBufferCreateParams iParams;
+    NvBufferPixFmtVersion version;
+    int dma_fd = -1;
+    int ret;
+
+    memset(&params, 0, sizeof(params));
+    memset(&iParams, 0, sizeof(NvBufferCreateParams));
+
+    iParams.width = 1280;
+    iParams.height = 720;
+    iParams.layout = NvBufferLayout_BlockLinear;
+    iParams.payloadType = NvBufferPayload_SurfArray;
+    iParams.nvbuf_tag = NvBufferTag_NONE;
+    iParams.colorFormat = NvBufferColorFormat_NV12;
+
+    /* Create assumed NV12 buffer */
+    ret = NvBufferCreateEx(&dma_fd, &iParams);
+    if (ret || dma_fd == -1) {
+        av_log(ctx->avctx, AV_LOG_ERROR,
+               "Error getting NvBuffer Pixel Format list version!\n");
+        return NvBufferPixFmtVersion_New; /* Fallback to new */
+    }
+
+    /* Query created buffer parameters */
+    ret = NvBufferGetParams(dma_fd, &params);
+    if (ret) {
+        av_log(ctx->avctx, AV_LOG_ERROR,
+               "Error getting NvBuffer Pixel Format list version!\n");
+        return NvBufferPixFmtVersion_New; /* Fallback to new */
+    }
+
+    /* Check if returned parameters match NV12 in old BSP. */
+    if (params.num_planes == 2 && params.pitch[1] == iParams.width) {
+        av_log(ctx->avctx, AV_LOG_VERBOSE, "Old NvBuffer Utils version\n");
+        version = NvBufferPixFmtVersion_Legacy;
+    } else {
+        av_log(ctx->avctx, AV_LOG_VERBOSE, "New NvBuffer Utils version\n");
+        version = NvBufferPixFmtVersion_New;
+    }
+
+    NvBufferDestroy(dma_fd);
+
+    return version;
 }

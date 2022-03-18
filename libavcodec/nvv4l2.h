@@ -23,8 +23,8 @@
 /**
  * Specifies the decoder device node.
  */
-#ifndef __nvv4l2_H__
-#define __nvv4l2_H__
+#ifndef __NVV4L2_H__
+#define __NVV4L2_H__
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -33,15 +33,18 @@
 #include <linux/videodev2.h>
 #include "avcodec.h"
 
-#include "nvbuf_utils.h"
-#include "v4l2_nv_extensions.h"
+#include "nvv4l2_ext_utils.h"
 
 #define NV_MAX_BUFFERS 32
-
-/**
- * Specifies the maximum number of planes a buffer can contain.
- */
 #define NV_MAX_PLANES 3
+
+/* Max timestamp accepted by NVV4L2 */
+#define NV_V4L2_TIMESTAMP_MAX_SEC ((int64_t)UINT64_C(0x1AD7F29ABCA))
+
+/* Custom values/flags to pass over info into capture plane */
+#define NV_V4L2_NOPTS_VALUE NV_V4L2_TIMESTAMP_MAX_SEC
+#define NV_V4L2_REORDERED_OPAQUE_FLAG ((int64_t)UINT64_C(0x10000000000))
+
 #define NVMIN(a,b) (((a) < (b)) ? (a) : (b))
 #define NVMAX(a, b) ((a) > (b) ? (a) : (b))
 
@@ -49,6 +52,8 @@
 #define NVMALLOC(size) (av_malloc((size)))
 #define NVCALLOC(num, size) (av_mallocz((num) * (size)))
 #define NVFREE(ptr) (av_free((ptr)))
+
+#define NVALIGN(x, a) (((x) + (a) - 1) & ~((a) - 1))
 
 typedef struct _queue {
     uint32_t capacity;
@@ -67,7 +72,8 @@ typedef struct _NVPACKET {
     uint8_t *payload;
     uint32_t width;
     uint32_t height;
-    uint64_t pts;
+    int64_t  pts;
+    int64_t  user_pts;
 } NvPacket;
 
 typedef struct _NVFRAME {
@@ -76,7 +82,8 @@ typedef struct _NVFRAME {
     uint8_t *payload[3];
     uint32_t width;
     uint32_t height;
-    uint64_t pts;
+    int64_t  pts;
+    int64_t  user_pts;
 } NvFrame;
 
 typedef enum {
@@ -133,6 +140,7 @@ typedef struct {
     uint32_t tier;
     uint32_t preset_type;
     uint32_t lossless;
+    uint32_t twopass;
     uint32_t iframe_interval;
     uint32_t idr_interval;
     uint32_t fps_n;
@@ -158,6 +166,9 @@ typedef struct {
     uint32_t codec_width;
     uint32_t codec_height;
 
+    NvBufferSession buf_session;
+    NvBufferPixFmtVersion pixfmt_list_ver;
+
     uint32_t op_pixfmt;
     uint32_t cp_pixfmt;
     enum v4l2_memory op_mem_type;
@@ -181,7 +192,6 @@ typedef struct {
     pthread_cond_t queue_cond;
     pthread_mutex_t frame_lock;
     pthread_cond_t frame_cond;
-    pthread_mutex_t pool_lock;
     pthread_t capture_thread;
 
     bool in_error;
@@ -198,7 +208,9 @@ typedef struct {
     int      plane_dma_fd[NV_MAX_BUFFERS];
     uint32_t plane_width[MAX_NUM_PLANES];
     uint32_t plane_height[MAX_NUM_PLANES];
-    uint64_t frame_pts[NV_MAX_BUFFERS];
+    uint32_t plane_width_aligned;
+    int64_t  frame_pts[NV_MAX_BUFFERS];
+    int64_t  frame_user_pts[NV_MAX_BUFFERS];
 
     uint8_t *packet[NV_MAX_BUFFERS];
     uint32_t packet_buf_size[NV_MAX_BUFFERS];
@@ -288,6 +300,9 @@ nvv4l2_set_stream_control_framerate(int fd,  uint32_t buf_type,
 int
 nvv4l2_subscribe_event(int fd, uint32_t type, uint32_t id,
                        uint32_t flags);
+
+NvBufferPixFmtVersion
+nvv4l2_get_pixfmt_list_version(nvv4l2_ctx_t *ctx);
 
 /* NVV4L2 debug functions */
 void
