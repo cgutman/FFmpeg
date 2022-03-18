@@ -3143,7 +3143,7 @@ qsvenc_select="qsv"
 qsvvpp_select="qsv"
 vaapi_encode_deps="vaapi"
 v4l2_m2m_deps="linux_videodev2_h sem_timedwait"
-nvv4l2_deps="libv4l2 pthreads linux_videodev2_h nvbuf_utils_h v4l2_nv_extensions_h"
+nvv4l2_deps="libv4l2 pthreads linux_videodev2_h"
 nvv4l2_extralibs="-lnvbuf_utils"
 
 chromakey_cuda_filter_deps="ffnvcodec"
@@ -7006,11 +7006,8 @@ if enabled_any nvdec cuvid; then
     check_type "ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h" "CUVIDAV1PICPARAMS"
 fi
 
-enabled nvv4l2 && add_cflags '-I/usr/src/jetson_multimedia_api/include' \
-               && add_ldflags '-L/usr/lib/aarch64-linux-gnu/tegra' \
+enabled nvv4l2 && add_ldflags '-L/usr/lib/aarch64-linux-gnu/tegra' \
                && check_headers linux/videodev2.h \
-               && require_headers "v4l2_nv_extensions.h" \
-               && require_headers "nvbuf_utils.h" \
                && require_pkg_config libv4l2 libv4l2 libv4l2.h v4l2_ioctl
 
 enabled amf &&
