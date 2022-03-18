@@ -290,7 +290,6 @@ nvv4l2_ctx_t *nvv4l2_create_encoder(AVCodecContext *avctx,
     }
 
     /* Initialize mutexes */
-    pthread_mutex_init(&ctx->pool_lock, NULL);
     pthread_mutex_init(&ctx->queue_lock, NULL);
     pthread_cond_init(&ctx->queue_cond, NULL);
 
@@ -766,7 +765,6 @@ int nvv4l2_encoder_close(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
         }
 
         /* Free mutexes */
-        pthread_mutex_destroy(&ctx->pool_lock);
         pthread_mutex_destroy(&ctx->queue_lock);
         pthread_cond_destroy(&ctx->queue_cond);
     }

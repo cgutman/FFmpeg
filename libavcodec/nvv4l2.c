@@ -20,6 +20,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -77,28 +78,23 @@ int nvv4l2_pool_idx_next(nvv4l2_ctx_t *ctx, NvQueues *q)
 
 void nvv4l2_pool_push(nvv4l2_ctx_t *ctx, NvQueues *q)
 {
-    pthread_mutex_lock(&ctx->pool_lock);
     if (q->capacity < NV_MAX_BUFFERS) {
         q->back = (q->back + 1) % NV_MAX_BUFFERS;
-        q->capacity++;
+        atomic_fetch_add(&q->capacity, 1);
     } else {
         av_log(ctx->avctx, AV_LOG_ERROR, "Queue already full!\n");
     }
-    pthread_mutex_unlock(&ctx->pool_lock);
 }
 
 int nvv4l2_pool_pop(nvv4l2_ctx_t *ctx, NvQueues *q)
 {
-    int index;
-    pthread_mutex_lock(&ctx->pool_lock);
-    index = q->front;
+    int index = q->front;
     if (q->capacity != 0) {
         q->front = (q->front + 1) % NV_MAX_BUFFERS;
-        q->capacity--;
+        atomic_fetch_sub(&q->capacity, 1);
     } else {
         av_log(ctx->avctx, AV_LOG_ERROR, "Queue already empty!");
     }
-    pthread_mutex_unlock(&ctx->pool_lock);
     return index;
 }
 
