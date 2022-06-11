@@ -816,6 +816,7 @@ nvv4l2_dbg_plane_supported_formats(nvv4l2_ctx_t *ctx,
     }
 }
 
+/*! TODO: Add 34.1.x support; YUV444 enum value changed. */
 NvBufferPixFmtVersion
 nvv4l2_get_pixfmt_list_version(nvv4l2_ctx_t *ctx)
 {

@@ -2145,7 +2145,7 @@ typedef enum
   /** BT.601 colorspace - Y/CbCr 4:2:0 10-bit multi-planar. */
   NvBufferColorFormat_NV12_10LE = 19, /* BSP 32.5.0 and up: 20 */
   /** BT.601 colorspace - YUV444 multi-planar. */
-  NvBufferColorFormat_YUV444    = 35, /* BSP 32.5.0 and up: 36 */
+  NvBufferColorFormat_YUV444    = 35, /* BSP 32.5.0 and up: 36. BSP 34.1.0 and up: 34 */
 } NvBufferColorFormat;
 
 /**
