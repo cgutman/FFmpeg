@@ -285,15 +285,45 @@ static void query_set_capture(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
         min_cap_buffers = ctl.value;
     }
 
-    /* Set quantization type. */
-    if (format.fmt.pix_mp.quantization == V4L2_QUANTIZATION_DEFAULT) {
+    /* Set color format based on colorspace and quantization type. */
+    switch(format.fmt.pix_mp.colorspace)
+    {
+    case V4L2_COLORSPACE_REC709:
+        if (format.fmt.pix_mp.quantization == V4L2_QUANTIZATION_DEFAULT)
+        {
+            av_log(avctx, AV_LOG_VERBOSE,
+                "Colorspace ITU-R BT.709 with standard range luma (16-235)\n");
+            cParams.colorFormat = NvBufferColorFormat_NV12_709;
+        }
+        else
+        {
+            av_log(avctx, AV_LOG_VERBOSE,
+                "Colorspace ITU-R BT.709 with extended range luma (0-255)\n");
+            cParams.colorFormat = NvBufferColorFormat_NV12_709_ER;
+        }
+        break;
+    case V4L2_COLORSPACE_BT2020:
         av_log(avctx, AV_LOG_VERBOSE,
-            "Colorspace ITU-R BT.601 with standard range luma (16-235)\n");
-        cap_params.colorFormat = NvBufferColorFormat_NV12;
-    } else {
+               "Colorspace ITU-R BT.2020\n");
+        cParams.colorFormat = NvBufferColorFormat_NV12_2020;
+        break;
+    default:
         av_log(avctx, AV_LOG_VERBOSE,
-            "Colorspace ITU-R BT.601 with extended range luma (0-255)\n");
-        cap_params.colorFormat = NvBufferColorFormat_NV12_ER;
+               "Colorspace details are missing, using default\n");
+    case V4L2_COLORSPACE_SMPTE170M:
+        if (format.fmt.pix_mp.quantization == V4L2_QUANTIZATION_DEFAULT)
+        {
+            av_log(avctx, AV_LOG_VERBOSE,
+                "Colorspace ITU-R BT.601 with standard range luma (16-235)\n");
+            cParams.colorFormat = NvBufferColorFormat_NV12;
+        }
+        else
+        {
+            av_log(avctx, AV_LOG_VERBOSE,
+                "Colorspace ITU-R BT.601 with extended range luma (0-255)\n");
+            cParams.colorFormat = NvBufferColorFormat_NV12_ER;
+        }
+        break;
     }
 
     /* Increment color format if NvBuffer is newer. */
@@ -303,19 +333,13 @@ static void query_set_capture(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
     /* Request number of buffers returned by ctrl, plus 10 more. */
     ctx->cp_num_buffers = min_cap_buffers + 10;
 
-    /* Create DMA Buffers by defining the parameters for the HW Buffer.
-     ** @payloadType defines the memory handle for the NvBuffer, here
-     ** defined for the set of planes.
-     ** @nvbuf_tag identifies the type of device or component
-     ** requesting the operation.
-     ** @layout defines memory layout for the surfaces, either Pitch/BLockLinear.
-     */
+    /* Create DMA Buffers by defining the parameters for the HW Buffer. */
+    cap_params.width = crop.c.width;
+    cap_params.height = crop.c.height;
+    cap_params.layout = NvBufferLayout_BlockLinear;
+    cap_params.payloadType = NvBufferPayload_SurfArray;
+    cap_params.nvbuf_tag = NvBufferTag_VIDEO_DEC;
     for (uint32_t i = 0; i < ctx->cp_num_buffers; i++) {
-        cap_params.width = crop.c.width;
-        cap_params.height = crop.c.height;
-        cap_params.layout = NvBufferLayout_BlockLinear;
-        cap_params.payloadType = NvBufferPayload_SurfArray;
-        cap_params.nvbuf_tag = NvBufferTag_VIDEO_DEC;
         ret = NvBufferCreateEx(&ctx->dmabuff_fd[i], &cap_params);
         if (ret) {
             av_log(avctx, AV_LOG_ERROR, "Failed to create buffers!\n");

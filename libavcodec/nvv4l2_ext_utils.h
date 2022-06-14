@@ -2129,23 +2129,29 @@ typedef enum
 typedef enum
 {
   /** BT.601 colorspace - YUV420 multi-planar. */
-  NvBufferColorFormat_YUV420    = 0,
+  NvBufferColorFormat_YUV420      = 0,
   /** BT.601 colorspace - YUV420 ER multi-planar. */
-  NvBufferColorFormat_YUV420_ER = 2, /* BSP 32.5.0 and up: 3 */
+  NvBufferColorFormat_YUV420_ER   = 2,  /* BSP 32.5.0 and up: 3 */
   /** BT.601 colorspace - Y/CbCr 4:2:0 multi-planar. */
-  NvBufferColorFormat_NV12      = 4, /* BSP 32.5.0 and up: 5 */
+  NvBufferColorFormat_NV12        = 4,  /* BSP 32.5.0 and up: 5 */
   /** BT.601 colorspace - Y/CbCr ER 4:2:0 multi-planar. */
-  NvBufferColorFormat_NV12_ER   = 5, /* BSP 32.5.0 and up: 6 */
+  NvBufferColorFormat_NV12_ER     = 5,  /* BSP 32.5.0 and up: 6 */
   /** LegacyRGBA colorspace - BGRA-8-8-8-8 planar. */
-  NvBufferColorFormat_ABGR32    = 16, /* BSP 32.5.0 and up: 17 */
+  NvBufferColorFormat_ABGR32      = 16, /* BSP 32.5.0 and up: 17 */
   /** LegacyRGBA colorspace - XRGB-8-8-8-8 planar. */
-  NvBufferColorFormat_XRGB32    = 17, /* BSP 32.5.0 and up: 18 */
+  NvBufferColorFormat_XRGB32      = 17, /* BSP 32.5.0 and up: 18 */
   /** LegacyRGBA colorspace - ARGB-8-8-8-8 planar. */
-  NvBufferColorFormat_ARGB32    = 18, /* BSP 32.5.0 and up: 19 */
+  NvBufferColorFormat_ARGB32      = 18, /* BSP 32.5.0 and up: 19 */
   /** BT.601 colorspace - Y/CbCr 4:2:0 10-bit multi-planar. */
-  NvBufferColorFormat_NV12_10LE = 19, /* BSP 32.5.0 and up: 20 */
+  NvBufferColorFormat_NV12_10LE   = 19, /* BSP 32.5.0 and up: 20 */
+  /** BT.709 colorspace - Y/CbCr 4:2:0 multi-planar. */
+  NvBufferColorFormat_NV12_709    = 29, /* BSP 32.5.0 and up: 30 */
+  /** BT.709 colorspace - Y/CbCr ER 4:2:0 multi-planar. */
+  NvBufferColorFormat_NV12_709_ER = 30, /* BSP 32.5.0 and up: 31 */
+  /** BT.2020 colorspace - Y/CbCr 4:2:0 multi-planar. */
+  NvBufferColorFormat_NV12_2020   = 32, /* BSP 32.5.0 and up: 33 */
   /** BT.601 colorspace - YUV444 multi-planar. */
-  NvBufferColorFormat_YUV444    = 35, /* BSP 32.5.0 and up: 36. BSP 34.1.0 and up: 34 */
+  NvBufferColorFormat_YUV444      = 35, /* BSP 32.5.0 and up: 36. BSP 34.1.0 and up: 34 */
 } NvBufferColorFormat;
 
 /**
