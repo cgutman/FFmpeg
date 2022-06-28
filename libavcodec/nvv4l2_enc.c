@@ -687,7 +687,14 @@ int nvv4l2_encoder_put_frame(AVCodecContext *avctx, nvv4l2_ctx_t *ctx,
 
     /* Import frame into output plane */
     for (uint32_t i = 0; i < buffer->n_planes; i++) {
-        Raw2NvBuffer(frame->payload[i], i, ctx->op_planefmts[i].width,
+        /*
+         ** Due to VIC constrains the transformation from Block Linear to Pitch
+         ** must have aligned widths to 64B. Otherwise the frame might be
+         ** produced as scrambled.
+         */
+        int aligned_plane_width = NVALIGN(ctx->op_planefmts[i].width, 64);
+
+        Raw2NvBuffer(frame->payload[i], i, aligned_plane_width,
                      ctx->op_planefmts[i].height, buffer->planes[i].fd);
         buffer->planes[i].bytesused = ctx->op_planefmts[i].width *
                                       ctx->op_planefmts[i].height *
