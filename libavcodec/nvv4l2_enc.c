@@ -646,6 +646,7 @@ int nvv4l2_encoder_put_frame(AVCodecContext *avctx, nvv4l2_ctx_t *ctx,
                              NvFrame *frame)
 {
     int ret;
+    int alignment;
     struct v4l2_buffer v4l2_buf_op;
     struct v4l2_plane queue_op_planes[NV_MAX_PLANES];
     NvBuffer *buffer;
@@ -685,14 +686,39 @@ int nvv4l2_encoder_put_frame(AVCodecContext *avctx, nvv4l2_ctx_t *ctx,
         }
     }
 
+    /*
+     ** Due to NvMap/VIC stride conversion constrains, the transformation
+     ** must be aligned per format/plane. Otherwise the frame might be
+     ** produced as scrambled.
+     **
+     ** !TODO: Have a proper algorithm to calculate needed alignements.
+     */
+    switch (ctx->op_pixfmt) {
+    case V4L2_PIX_FMT_NV12M:
+        alignment = 16;
+        break;
+    case V4L2_PIX_FMT_YUV420M:
+        alignment = 64;
+        break;
+    case V4L2_PIX_FMT_YUV444M:
+        alignment = 32;
+        break;
+    case V4L2_PIX_FMT_P010M:
+    default:
+        alignment = 1;
+        break;
+    }
+
     /* Import frame into output plane */
     for (uint32_t i = 0; i < buffer->n_planes; i++) {
-        /*
-         ** Due to VIC constrains the transformation from Block Linear to Pitch
-         ** must have aligned widths to 64B. Otherwise the frame might be
-         ** produced as scrambled.
-         */
-        int aligned_plane_width = NVALIGN(ctx->op_planefmts[i].width, 64);
+        int aligned_plane_width = NVALIGN(ctx->op_planefmts[i].width, alignment);
+
+        /* If plane is reduced, use alignment of main plane */
+        if (ctx->op_planefmts[i].width == ctx->op_planefmts[0].width / 2)
+            aligned_plane_width = NVALIGN(ctx->op_planefmts[0].width, alignment) / 2;
+
+        av_log(avctx, AV_LOG_VERBOSE, "Plane %d: width %d -> %d\n",
+               i, ctx->op_planefmts[i].width, aligned_plane_width);
 
         Raw2NvBuffer(frame->payload[i], i, aligned_plane_width,
                      ctx->op_planefmts[i].height, buffer->planes[i].fd);
