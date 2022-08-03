@@ -143,7 +143,7 @@ static void query_set_capture(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
     struct v4l2_format format;
     struct v4l2_crop crop;
     struct v4l2_control ctl;
-    int ret;
+    int ret, cp_num_old_buffers;
     int32_t min_cap_buffers;
     NvBufferCreateParams input_params = { 0 };
     NvBufferCreateParams cap_params = { 0 };
@@ -243,6 +243,7 @@ static void query_set_capture(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
     /* Request buffers with count 0 and destroy all
      ** previously allocated buffers.
      */
+    cp_num_old_buffers = ctx->cp_num_buffers;
     ret = nvv4l2_req_buffers_on_capture_plane(ctx,
                                               ctx->cp_buf_type,
                                               ctx->cp_mem_type, 0);
@@ -252,7 +253,7 @@ static void query_set_capture(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
     }
 
     /* Destroy previous DMA buffers. */
-    for (uint32_t i = 0; i < ctx->cp_num_buffers; i++) {
+    for (uint32_t i = 0; i < cp_num_old_buffers; i++) {
         if (ctx->dmabuff_fd[i] != -1) {
             ret = NvBufferDestroy(ctx->dmabuff_fd[i]);
             if (ret) {
@@ -872,7 +873,7 @@ nvv4l2_ctx_t *nvv4l2_create_decoder(AVCodecContext *avctx,
 
 int nvv4l2_decoder_close(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
 {
-    int ret;
+    int ret, cp_num_old_buffers;
 
     if (!ctx)
         return 0;
@@ -897,12 +898,13 @@ int nvv4l2_decoder_close(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
                                            ctx->op_buf_type,
                                            ctx->op_mem_type, 0);
 
+        cp_num_old_buffers = ctx->cp_num_buffers;
         nvv4l2_req_buffers_on_capture_plane(ctx,
                                             ctx->cp_buf_type,
                                             ctx->cp_mem_type, 0);
 
         /* All allocated DMA buffers must be destroyed. */
-        for (uint32_t i = 0; i < ctx->cp_num_buffers; i++) {
+        for (uint32_t i = 0; i < cp_num_old_buffers; i++) {
             if (ctx->dmabuff_fd[i] != -1) {
                 ret = NvBufferDestroy(ctx->dmabuff_fd[i]);
                 if (ret < 0) {
