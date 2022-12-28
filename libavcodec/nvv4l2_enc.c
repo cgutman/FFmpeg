@@ -795,6 +795,13 @@ int nvv4l2_encoder_close(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
             nvv4l2_destroyBuffer(ctx, ctx->cp_buffers[i]);
         }
 
+        for (uint32_t i = 0; i < ctx->op_num_buffers; i++) {
+            if (ctx->plane_dma_fd[i] != -1) {
+                nvv4l2_unmap_out(ctx, i, ctx->op_buf_type,
+                                 ctx->op_mem_type, ctx->plane_dma_fd[i]);
+            }
+        }
+
         /* Request 0 buffers on both planes. */
         op_num_old_buffers = ctx->op_num_buffers;
         ret = nvv4l2_req_buffers_on_output_plane(ctx,
@@ -808,8 +815,6 @@ int nvv4l2_encoder_close(AVCodecContext *avctx, nvv4l2_ctx_t *ctx)
         /* Unmap and destroy all allocated DMA buffers. */
         for (uint32_t i = 0; i < op_num_old_buffers; i++) {
             if (ctx->plane_dma_fd[i] != -1) {
-                nvv4l2_unmap_out(ctx, i, ctx->op_buf_type,
-                                 ctx->op_mem_type, ctx->plane_dma_fd[i]);
                 ret = NvBufferDestroy(ctx->plane_dma_fd[i]);
                 ctx->plane_dma_fd[i] = -1;
                 if (ret) {
