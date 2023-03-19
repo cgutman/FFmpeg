@@ -298,7 +298,7 @@ static int ffmal_update_format(AVCodecContext *avctx)
     if (!format_out)
         goto fail;
 
-    if ((status = mmal_port_parameter_set_uint32(decoder->output[0], MMAL_PARAMETER_EXTRA_BUFFERS, ctx->extra_buffers)))
+    if ((status = mmal_port_parameter_set_uint32(decoder->output[0], MMAL_PARAMETER_EXTRA_BUFFERS, 0)))
         goto fail;
 
     if ((status = mmal_port_parameter_set_boolean(decoder->output[0], MMAL_PARAMETER_VIDEO_INTERPOLATE_TIMESTAMPS, 0)))
@@ -341,7 +341,7 @@ static int ffmal_update_format(AVCodecContext *avctx)
     decoder->output[0]->buffer_size =
         FFMAX(decoder->output[0]->buffer_size_min, decoder->output[0]->buffer_size_recommended);
     decoder->output[0]->buffer_num =
-        FFMAX(decoder->output[0]->buffer_num_min, decoder->output[0]->buffer_num_recommended) + ctx->extra_buffers;
+        FFMAX(decoder->output[0]->buffer_num_min, 1 + ctx->extra_buffers);
     ctx->pool_out->pool = mmal_pool_create(decoder->output[0]->buffer_num,
                                            decoder->output[0]->buffer_size);
     if (!ctx->pool_out->pool) {
@@ -423,7 +423,7 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
         goto fail;
 
     decoder->input[0]->buffer_num =
-        FFMAX(decoder->input[0]->buffer_num_min, 20);
+        FFMAX(decoder->input[0]->buffer_num_min, 6);
     decoder->input[0]->buffer_size =
         FFMAX(decoder->input[0]->buffer_size_min, 512 * 1024);
     ctx->pool_in = mmal_pool_create(decoder->input[0]->buffer_num, 0);
