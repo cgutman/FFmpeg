@@ -363,8 +363,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
 #endif
     }
-    if (codec->priv_class)
-        av_assert0(*(const AVClass **)avctx->priv_data == codec->priv_class);
 
 end:
 

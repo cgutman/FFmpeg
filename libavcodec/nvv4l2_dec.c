@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, CTCaer <ctcaer@gmail.com>
+ * Copyright (c) 2021-2023, CTCaer <ctcaer@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -30,9 +30,17 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "internal.h"
+#include "decode.h"
+#include "thread.h"
 #include "libavutil/log.h"
+#include "libavutil/pixdesc.h"
+#include "libavutil/opt.h"
 
 #include "nvv4l2.h"
+
+extern AVCodec ff_h264_decoder;
+extern AVCodec ff_hevc_decoder;
+extern AVCodec ff_vp9_decoder;
 
 /*
  ** Output plane format support:
@@ -977,6 +985,48 @@ static NvCodingType map_avcodec_id(enum AVCodecID id)
     return NvVideoCodec_UNDEFINED;
 }
 
+static int nvv4l2dec_codec_fallback(AVCodecContext *avctx)
+{
+    av_log(avctx, AV_LOG_WARNING, "Falling back to software decoding.\n");
+
+    switch (avctx->codec_id) {
+    case AV_CODEC_ID_H264:
+        avctx->codec = &ff_h264_decoder;
+        break;
+    case AV_CODEC_ID_HEVC:
+        avctx->codec = &ff_hevc_decoder;
+        break;
+    case AV_CODEC_ID_VP9:
+        avctx->codec = &ff_vp9_decoder;
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unsupported codec fallback!\n");
+        return AVERROR_BUG;
+    }
+
+    av_opt_free(avctx->priv_data);
+
+    if (avctx->codec->priv_data_size > 0) {
+        avctx->priv_data = av_mallocz(avctx->codec->priv_data_size);
+        if (!avctx->priv_data)
+            return AVERROR(ENOMEM);
+    }
+
+    if (HAVE_THREADS
+        && !(avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))) {
+        ff_thread_init(avctx);
+    }
+    if (!HAVE_THREADS && !(avctx->codec->caps_internal & FF_CODEC_CAP_AUTO_THREADS))
+        avctx->thread_count = 1;
+
+    if (avctx->codec->priv_class) {
+        *(const AVClass **)avctx->priv_data = avctx->codec->priv_class;
+        av_opt_set_defaults(avctx->priv_data);
+    }
+
+    return avctx->codec->init(avctx);
+}
+
 static int nvv4l2dec_init(AVCodecContext *avctx)
 {
     nvv4l2DecodeContext *nvv4l2_ctx = avctx->priv_data;
@@ -999,9 +1049,9 @@ static int nvv4l2dec_init(AVCodecContext *avctx)
         pix_fmt = V4L2_PIX_FMT_NV12M;
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Unsupported pixel format %d!\n",
-               avctx->pix_fmt);
-        return AVERROR_BUG;
+        av_log(avctx, AV_LOG_WARNING, "Unsupported pixel format %s!\n",
+               av_get_pix_fmt_name(avctx->pix_fmt));
+        return nvv4l2dec_codec_fallback(avctx);
     }
 
     nvv4l2_ctx->ctx = nvv4l2_create_decoder(avctx, nv_codec_type, pix_fmt);
