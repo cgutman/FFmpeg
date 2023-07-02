@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, CTCaer <ctcaer@gmail.com>
+ * Copyright (c) 2021-2023, CTCaer <ctcaer@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -1129,6 +1129,8 @@ static int nvv4l2enc_init(AVCodecContext *avctx)
     case AV_PIX_FMT_NV12:
         pix_fmt = V4L2_PIX_FMT_NV12M;
         break;
+    case AV_PIX_FMT_YUV420P10:
+        avctx->pix_fmt = AV_PIX_FMT_P010;
     case AV_PIX_FMT_P010:
         pix_fmt = V4L2_PIX_FMT_P010M;
         break;
@@ -1472,6 +1474,7 @@ static const AVOption options_hevc[] = {
                                                          AV_PIX_FMT_YUV444P,          \
                                                          AV_PIX_FMT_NV12,             \
                                                          AV_PIX_FMT_P010,             \
+                                                         AV_PIX_FMT_YUV420P10,        \
                                                          AV_PIX_FMT_NONE },           \
     };
 
