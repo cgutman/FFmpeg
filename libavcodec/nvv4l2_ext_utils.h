@@ -2144,6 +2144,12 @@ typedef enum
   NvBufferColorFormat_ARGB32      = 18, /* BSP 32.5.0 and up: 19 */
   /** BT.601 colorspace - Y/CbCr 4:2:0 10-bit multi-planar. */
   NvBufferColorFormat_NV12_10LE   = 19, /* BSP 32.5.0 and up: 20 */
+  /** BT.709 colorspace - Y/CbCr 4:2:0 10-bit multi-planar. */
+  NvBufferColorFormat_NV12_10LE_709    = 20, /* BSP 32.5.0 and up: 21 */
+  /** BT.709_ER colorspace - Y/CbCr 4:2:0 10-bit multi-planar. */
+  NvBufferColorFormat_NV12_10LE_709_ER = 21, /* BSP 32.5.0 and up: 22 */
+  /** BT.2020 colorspace - Y/CbCr 4:2:0 10-bit multi-planar. */
+  NvBufferColorFormat_NV12_10LE_2020   = 22, /* BSP 32.5.0 and up: 23 */
   /** BT.709 colorspace - Y/CbCr 4:2:0 multi-planar. */
   NvBufferColorFormat_NV12_709    = 29, /* BSP 32.5.0 and up: 30 */
   /** BT.709 colorspace - Y/CbCr ER 4:2:0 multi-planar. */

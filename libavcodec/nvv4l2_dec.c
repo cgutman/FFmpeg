@@ -1041,13 +1041,20 @@ static int nvv4l2dec_init(AVCodecContext *avctx)
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_NONE:
-        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     case AV_PIX_FMT_YUV420P:
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         pix_fmt = V4L2_PIX_FMT_YUV420M;
         break;
     case AV_PIX_FMT_NV12:
         pix_fmt = V4L2_PIX_FMT_NV12M;
         break;
+    case AV_PIX_FMT_YUV420P10LE:
+    case AV_PIX_FMT_P010:
+        if (avctx->codec_id == AV_CODEC_ID_HEVC) {
+            avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+            pix_fmt = V4L2_PIX_FMT_YUV420M;
+            break;
+        }
     default:
         av_log(avctx, AV_LOG_WARNING, "Unsupported pixel format %s!\n",
                av_get_pix_fmt_name(avctx->pix_fmt));
