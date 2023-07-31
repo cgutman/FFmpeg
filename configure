@@ -279,7 +279,6 @@ External library support:
                            if openssl, gnutls or mbedtls is not used [no]
   --enable-libtwolame      enable MP2 encoding via libtwolame [no]
   --enable-libuavs3d       enable AVS3 decoding via libuavs3d [no]
-  --enable-libudev         enable libudev [no]
   --enable-libv4l2         enable libv4l2/v4l-utils [no]
   --enable-libvidstab      enable video stabilization using vid.stab [no]
   --enable-libvmaf         enable vmaf filter via libvmaf [no]
@@ -1898,7 +1897,6 @@ EXTERNAL_LIBRARY_LIST="
     libtheora
     libtwolame
     libuavs3d
-    libudev
     libv4l2
     libvmaf
     libvorbis
@@ -3049,7 +3047,7 @@ dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode ole32 user32"
 ffnvcodec_deps_any="libdl LoadLibrary"
 mediacodec_deps="android"
 nvdec_deps="ffnvcodec"
-v4l2_request_deps="linux_videodev2_h linux_media_h v4l2_timeval_to_ns libdrm libudev"
+v4l2_request_deps="linux_videodev2_h linux_media_h v4l2_timeval_to_ns libdrm"
 vaapi_x11_deps="xlib_x11"
 videotoolbox_hwaccel_deps="videotoolbox pthreads"
 videotoolbox_hwaccel_extralibs="-framework QuartzCore"
@@ -6821,7 +6819,6 @@ enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame
                              { check_lib libtwolame twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
                                die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
 enabled libuavs3d         && require_pkg_config libuavs3d "uavs3d >= 1.1.41" uavs3d.h uavs3d_decode
-enabled libudev           && require_pkg_config libudev libudev libudev.h udev_new
 enabled libv4l2           && require_pkg_config libv4l2 libv4l2 libv4l2.h v4l2_ioctl
 enabled libvidstab        && require_pkg_config libvidstab "vidstab >= 0.98" vid.stab/libvidstab.h vsMotionDetectInit
 enabled libvmaf           && require_pkg_config libvmaf "libvmaf >= 2.0.0" libvmaf.h vmaf_init
@@ -6926,9 +6923,7 @@ enabled rkmpp             && { require_pkg_config rkmpp rockchip_mpp  rockchip/r
                                  die "ERROR: rkmpp requires --enable-libdrm"; }
                              }
 enabled v4l2_request      && { enabled libdrm ||
-                               die "ERROR: v4l2-request requires --enable-libdrm"; } &&
-                             { enabled libudev ||
-                               die "ERROR: v4l2-request requires --enable-libudev"; }
+                               die "ERROR: v4l2-request requires --enable-libdrm"; }
 enabled vapoursynth       && require_pkg_config vapoursynth "vapoursynth-script >= 42" VSScript.h vsscript_init
 
 
