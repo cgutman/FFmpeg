@@ -17,15 +17,14 @@
  */
 
 #include <drm_fourcc.h>
-#include <fcntl.h>
-#include <libudev.h>
 #include <linux/media.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/sysmacros.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include "decode.h"
 #include "internal.h"
@@ -517,19 +516,14 @@ static int v4l2_request_select_capture_format(AVCodecContext *avctx)
     return -1;
 }
 
-static int v4l2_request_probe_video_device(struct udev_device *device, AVCodecContext *avctx, uint32_t pixelformat, uint32_t buffersize, struct v4l2_ext_control *control, int count)
+static int v4l2_request_probe_video_device(const char *path, AVCodecContext *avctx, uint32_t pixelformat, uint32_t buffersize, struct v4l2_ext_control *control, int count)
 {
     V4L2RequestContext *ctx = avctx->internal->hwaccel_priv_data;
     int ret = AVERROR(EINVAL);
     struct v4l2_capability capability = {0};
     unsigned int capabilities = 0;
 
-    const char *path = udev_device_get_devnode(device);
-    if (!path) {
-        av_log(avctx, AV_LOG_ERROR, "%s: get video device devnode failed\n", __func__);
-        ret = AVERROR(EINVAL);
-        goto fail;
-    }
+    av_log(avctx, AV_LOG_DEBUG, "%s: probing video device %s\n", __func__, path);
 
     ctx->video_fd = open(path, O_RDWR | O_NONBLOCK, 0);
     if (ctx->video_fd < 0) {
@@ -662,23 +656,59 @@ fail:
     return ret;
 }
 
-static int v4l2_request_probe_media_device(struct udev_device *device, AVCodecContext *avctx, uint32_t pixelformat, uint32_t buffersize, struct v4l2_ext_control *control, int count)
+static int v4l2_request_get_dev_path_by_major_minor(AVCodecContext *avctx, uint32_t major, uint32_t minor, char *pathbuf, size_t pathbufsize)
+{
+    char ueventpath[128];
+    char ueventbuf[4096];
+    int ueventfd;
+    ssize_t readsize;
+    char *value;
+    char *end;
+
+    snprintf(ueventpath, sizeof(ueventpath), "/sys/dev/char/%u:%u/uevent", major, minor);
+    ueventfd = open(ueventpath, O_RDONLY);
+    if (ueventfd < 0) {
+        av_log(avctx, AV_LOG_ERROR, "%s: opening %s failed, %s (%d)\n", __func__, ueventpath, strerror(errno), errno);
+        return AVERROR(EINVAL);
+    }
+
+    readsize = read(ueventfd, ueventbuf, sizeof(ueventbuf) - 1);
+    close(ueventfd);
+
+    if (readsize < 0) {
+        av_log(avctx, AV_LOG_ERROR, "%s: reading %s failed, %s (%d)\n", __func__, ueventpath, strerror(errno), errno);
+        return AVERROR(EINVAL);
+    }
+
+    ueventbuf[readsize] = 0;
+
+    value = strstr(ueventbuf, "DEVNAME=");
+    if (!value) {
+        av_log(avctx, AV_LOG_ERROR, "%s: reading %s failed, unable to find DEVNAME\n", __func__, ueventpath);
+        return AVERROR(EINVAL);
+    }
+
+    value += strlen("DEVNAME=");
+
+    end = strchr(value, '\n');
+    if (end)
+        *end = 0;
+
+    snprintf(pathbuf, pathbufsize, "/dev/%s", value);
+
+    av_log(avctx, AV_LOG_DEBUG, "%s: resolved %s -> %s\n", __func__, ueventpath, pathbuf);
+    return 0;
+}
+
+static int v4l2_request_probe_media_device(const char *path, AVCodecContext *avctx, uint32_t pixelformat, uint32_t buffersize, struct v4l2_ext_control *control, int count)
 {
     V4L2RequestContext *ctx = avctx->internal->hwaccel_priv_data;
     int ret;
     struct media_device_info device_info = {0};
     struct media_v2_topology topology = {0};
     struct media_v2_interface *interfaces = NULL;
-    struct udev *udev = udev_device_get_udev(device);
-    struct udev_device *video_device;
-    dev_t devnum;
 
-    const char *path = udev_device_get_devnode(device);
-    if (!path) {
-        av_log(avctx, AV_LOG_ERROR, "%s: get media device devnode failed\n", __func__);
-        ret = AVERROR(EINVAL);
-        goto fail;
-    }
+    av_log(avctx, AV_LOG_DEBUG, "%s: probing media device %s\n", __func__, path);
 
     ctx->media_fd = open(path, O_RDWR, 0);
     if (ctx->media_fd < 0) {
@@ -726,19 +756,16 @@ static int v4l2_request_probe_media_device(struct udev_device *device, AVCodecCo
 
     ret = AVERROR(EINVAL);
     for (int i = 0; i < topology.num_interfaces; i++) {
+        char video_devpath[512];
+
         if (interfaces[i].intf_type != MEDIA_INTF_T_V4L_VIDEO)
             continue;
 
-        devnum = makedev(interfaces[i].devnode.major, interfaces[i].devnode.minor);
-        video_device = udev_device_new_from_devnum(udev, 'c', devnum);
-        if (!video_device) {
-            av_log(avctx, AV_LOG_ERROR, "%s: video_device=%p\n", __func__, video_device);
+        if (v4l2_request_get_dev_path_by_major_minor(avctx, interfaces[i].devnode.major, interfaces[i].devnode.minor,
+                                                     video_devpath, sizeof(video_devpath)))
             continue;
-        }
 
-        ret = v4l2_request_probe_video_device(video_device, avctx, pixelformat, buffersize, control, count);
-        udev_device_unref(video_device);
-
+        ret = v4l2_request_probe_video_device(video_devpath, avctx, pixelformat, buffersize, control, count);
         if (!ret) {
             av_freep(&interfaces);
             av_log(avctx, AV_LOG_INFO, "Using V4L2 media device %s (%s) for %s\n", path, device_info.driver, av_fourcc2str(pixelformat));
@@ -759,11 +786,9 @@ int ff_v4l2_request_init(AVCodecContext *avctx, uint32_t pixelformat, uint32_t b
 {
     V4L2RequestContext *ctx = avctx->internal->hwaccel_priv_data;
     int ret = AVERROR(EINVAL);
-    struct udev *udev;
-    struct udev_enumerate *enumerate;
-    struct udev_list_entry *devices;
-    struct udev_list_entry *entry;
-    struct udev_device *device;
+    char media_devpath[512];
+    struct dirent *entry;
+    DIR *dirp;
 
     av_log(avctx, AV_LOG_DEBUG, "%s: ctx=%p hw_device_ctx=%p hw_frames_ctx=%p\n", __func__, ctx, avctx->hw_device_ctx, avctx->hw_frames_ctx);
 
@@ -771,49 +796,27 @@ int ff_v4l2_request_init(AVCodecContext *avctx, uint32_t pixelformat, uint32_t b
     ctx->media_fd = -1;
     ctx->video_fd = -1;
 
-    udev = udev_new();
-    if (!udev) {
-        av_log(avctx, AV_LOG_ERROR, "%s: allocating udev context failed\n", __func__);
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    dirp = opendir("/dev");
+    if (!dirp)
+        return AVERROR(errno);
 
-    enumerate = udev_enumerate_new(udev);
-    if (!enumerate) {
-        av_log(avctx, AV_LOG_ERROR, "%s: allocating udev enumerator failed\n", __func__);
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    udev_enumerate_add_match_subsystem(enumerate, "media");
-    udev_enumerate_scan_devices(enumerate);
-
-    devices = udev_enumerate_get_list_entry(enumerate);
-    udev_list_entry_foreach(entry, devices) {
-        const char *path = udev_list_entry_get_name(entry);
-        if (!path)
+    while ((entry = readdir(dirp)) != NULL) {
+        if (strncmp(entry->d_name, "media", 5))
             continue;
 
-        device = udev_device_new_from_syspath(udev, path);
-        if (!device)
-            continue;
-
-        ret = v4l2_request_probe_media_device(device, avctx, pixelformat, buffersize, control, count);
-        udev_device_unref(device);
-
+        snprintf(media_devpath, sizeof(media_devpath), "/dev/%s", entry->d_name);
+        ret = v4l2_request_probe_media_device(media_devpath, avctx, pixelformat, buffersize, control, count);
         if (!ret)
             break;
     }
 
-    udev_enumerate_unref(enumerate);
+    closedir(dirp);
 
     if (!ret)
         ret = v4l2_request_init_context(avctx);
     else
         av_log(avctx, AV_LOG_INFO, "No V4L2 media device found for %s\n", av_fourcc2str(pixelformat));
 
-fail:
-    udev_unref(udev);
     return ret;
 }
 
