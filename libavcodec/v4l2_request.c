@@ -760,12 +760,13 @@ static int v4l2_request_probe_media_device(const char *path, AVCodecContext *avc
             continue;
 
         ret = v4l2_request_probe_video_device(video_devpath, avctx, pixelformat, buffersize, control, count);
-        if (!ret)
-            break;
+        if (!ret) {
+            av_freep(&interfaces);
+            return 0;
+        }
     }
 
-    av_freep(&interfaces);
-    return ret;
+    av_log(avctx, AV_LOG_ERROR, "%s: no matching V4L2 interfaces found\n", __func__);
 
 fail:
     av_freep(&interfaces);
