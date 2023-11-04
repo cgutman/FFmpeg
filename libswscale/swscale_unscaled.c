@@ -190,7 +190,7 @@ static int planarToNv24Wrapper(SwsInternal *c, const uint8_t *const src[],
     ff_copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->opts.src_w,
                  dstParam[0], dstStride[0]);
 
-    if (c->opts.dst_format == AV_PIX_FMT_NV24)
+    if (c->opts.dst_format == AV_PIX_FMT_NV24 || c->opts.dst_format == AV_PIX_FMT_NV16)
         interleaveBytes(src[1], src[2], dst, c->chrSrcW, srcSliceH,
                         srcStride[1], srcStride[2], dstStride[1]);
     else
@@ -211,7 +211,7 @@ static int nv24ToPlanarWrapper(SwsInternal *c, const uint8_t *const src[],
     ff_copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->opts.src_w,
                  dstParam[0], dstStride[0]);
 
-    if (c->opts.src_format == AV_PIX_FMT_NV24)
+    if (c->opts.src_format == AV_PIX_FMT_NV24 || c->opts.src_format == AV_PIX_FMT_NV16)
         deinterleaveBytes(src[1], dst1, dst2, c->chrSrcW, srcSliceH,
                           srcStride[1], dstStride[1], dstStride[2]);
     else
@@ -2398,6 +2398,11 @@ void ff_get_unscaled_swscale(SwsInternal *c)
         (dstFormat == AV_PIX_FMT_NV12 || dstFormat == AV_PIX_FMT_NV21)) {
         c->convert_unscaled = planarToNv12Wrapper;
     }
+    /* yv16_to_nv16 */
+    if ((srcFormat == AV_PIX_FMT_YUV422P || srcFormat == AV_PIX_FMT_YUVA422P) &&
+        dstFormat == AV_PIX_FMT_NV16) {
+        c->convert_unscaled = planarToNv24Wrapper;
+    }
     /* yv24_to_nv24 */
     if ((srcFormat == AV_PIX_FMT_YUV444P || srcFormat == AV_PIX_FMT_YUVA444P) &&
         (dstFormat == AV_PIX_FMT_NV24 || dstFormat == AV_PIX_FMT_NV42)) {
@@ -2407,6 +2412,10 @@ void ff_get_unscaled_swscale(SwsInternal *c)
     if (dstFormat == AV_PIX_FMT_YUV420P &&
         (srcFormat == AV_PIX_FMT_NV12 || srcFormat == AV_PIX_FMT_NV21)) {
         c->convert_unscaled = nv12ToPlanarWrapper;
+    }
+    /* nv16_to_yv16 */
+    if (dstFormat == AV_PIX_FMT_YUV422P && srcFormat == AV_PIX_FMT_NV16) {
+        c->convert_unscaled = nv24ToPlanarWrapper;
     }
     /* nv24_to_yv24 */
     if (dstFormat == AV_PIX_FMT_YUV444P &&
