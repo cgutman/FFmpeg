@@ -163,6 +163,11 @@ typedef struct AVPixFmtDescriptor {
 #define AV_PIX_FMT_FLAG_XYZ          (1 << 10)
 
 /**
+ * HACK: force use of linesize = linesize * 5 / 4
+ */
+#define AV_PIX_FMT_FLAG_10BIT_NO_PADDING        (1 << 11)
+
+/**
  * Return the number of bits per pixel used by the pixel format
  * described by pixdesc. Note that this is not the same as the number
  * of bits per sample.
