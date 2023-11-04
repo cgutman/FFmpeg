@@ -588,7 +588,7 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 1, 2, 0, 0, 10 },        /* U */
             { 1, 2, 1, 0, 10 },        /* V */
         },
-        .flags = AV_PIX_FMT_FLAG_PLANAR,
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_10BIT_NO_PADDING,
     },
     [AV_PIX_FMT_ARGB] = {
         .name = "argb",
@@ -2101,7 +2101,7 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 1, 2, 0, 0, 10 },        /* U */
             { 1, 2, 1, 0, 10 },        /* V */
         },
-        .flags = AV_PIX_FMT_FLAG_PLANAR,
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_10BIT_NO_PADDING,
     },
     [AV_PIX_FMT_NV20LE] = {
         .name = "nv20le",
