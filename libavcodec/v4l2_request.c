@@ -30,6 +30,10 @@
 #include "internal.h"
 #include "v4l2_request.h"
 
+#ifndef V4L2_PIX_FMT_NV15
+#define V4L2_PIX_FMT_NV15 v4l2_fourcc('N', 'V', '1', '5')
+#endif
+
 static const AVClass v4l2_request_context_class = {
     .class_name = "V4L2RequestContext",
     .item_name  = av_default_item_name,
@@ -195,9 +199,7 @@ static const struct {
 } v4l2_request_capture_pixelformats[] = {
     { V4L2_PIX_FMT_NV12, AV_PIX_FMT_NV12, DRM_FORMAT_NV12, DRM_FORMAT_MOD_LINEAR },
     { V4L2_PIX_FMT_SUNXI_TILED_NV12, AV_PIX_FMT_NV12, DRM_FORMAT_NV12, DRM_FORMAT_MOD_ALLWINNER_TILED },
-#if defined(V4L2_PIX_FMT_NV15) && defined(DRM_FORMAT_NV15)
     { V4L2_PIX_FMT_NV15, AV_PIX_FMT_NV15, DRM_FORMAT_NV15, DRM_FORMAT_MOD_LINEAR },
-#endif
     { V4L2_PIX_FMT_NV16, AV_PIX_FMT_NV16, DRM_FORMAT_NV16, DRM_FORMAT_MOD_LINEAR },
 #if defined(V4L2_PIX_FMT_NV20) && defined(DRM_FORMAT_NV20)
     { V4L2_PIX_FMT_NV20, AV_PIX_FMT_NV20NP, DRM_FORMAT_NV20, DRM_FORMAT_MOD_LINEAR },
