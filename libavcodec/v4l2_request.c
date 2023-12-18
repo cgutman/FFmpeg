@@ -38,6 +38,30 @@
 #define DRM_FORMAT_NV20 fourcc_code('N', 'V', '2', '0')
 #endif
 
+#ifndef DRM_FORMAT_P010
+#define DRM_FORMAT_P010 fourcc_code('P', '0', '1', '0')
+#endif
+
+#ifndef DRM_FORMAT_P030
+#define DRM_FORMAT_P030 fourcc_code('P', '0', '3', '0')
+#endif
+
+#ifndef V4L2_PIX_FMT_NV15
+#define V4L2_PIX_FMT_NV15 v4l2_fourcc('N', 'V', '1', '5')
+#endif
+
+#ifndef V4L2_PIX_FMT_P010
+#define V4L2_PIX_FMT_P010 v4l2_fourcc('P', '0', '1', '0')
+#endif
+
+#ifndef V4L2_PIX_FMT_NV12_COL128
+#define V4L2_PIX_FMT_NV12_COL128 v4l2_fourcc('N', 'C', '1', '2')
+#endif
+
+#ifndef V4L2_PIX_FMT_NV12_10_COL128
+#define V4L2_PIX_FMT_NV12_10_COL128 v4l2_fourcc('N', 'C', '3', '0')
+#endif
+
 uint64_t ff_v4l2_request_get_capture_timestamp(AVFrame *frame)
 {
     V4L2RequestDescriptor *req = (V4L2RequestDescriptor*)frame->data[0];
@@ -190,14 +214,20 @@ static int v4l2_request_dequeue_buffer(V4L2RequestContext *ctx, V4L2RequestBuffe
 }
 
 const uint32_t v4l2_request_capture_pixelformats[] = {
+    /* 8-bit 4:2:0 formats */
     V4L2_PIX_FMT_NV12,
-#ifdef DRM_FORMAT_MOD_ALLWINNER_TILED
+    V4L2_PIX_FMT_NV12_COL128,
     V4L2_PIX_FMT_SUNXI_TILED_NV12,
-#endif
-#if defined(V4L2_PIX_FMT_NV15) && defined(DRM_FORMAT_NV15)
-    V4L2_PIX_FMT_NV15,
-#endif
+
+    /* 8-bit 4:2:2 formats */
     V4L2_PIX_FMT_NV16,
+
+    /* 10-bit 4:2:0 formats */
+    V4L2_PIX_FMT_P010,
+    V4L2_PIX_FMT_NV15,
+    V4L2_PIX_FMT_NV12_10_COL128,
+
+    /* 10-bit 4:2:2 formats */
 #if defined(V4L2_PIX_FMT_NV20) && defined(DRM_FORMAT_NV20)
     V4L2_PIX_FMT_NV20,
 #endif
@@ -207,25 +237,40 @@ static int v4l2_request_set_drm_descriptor(V4L2RequestDescriptor *req, struct v4
 {
     AVDRMFrameDescriptor *desc = &req->drm;
     AVDRMLayerDescriptor *layer = &desc->layers[0];
-    uint32_t pixelformat = V4L2_TYPE_IS_MULTIPLANAR(format->type) ? format->fmt.pix_mp.pixelformat : format->fmt.pix.pixelformat;
+    uint32_t width;
+    uint32_t height;
+    uint32_t bpl;
+    uint32_t pixelformat;
+
+    if (V4L2_TYPE_IS_MULTIPLANAR(format->type)) {
+        width = format->fmt.pix_mp.width;
+        height = format->fmt.pix_mp.height;
+        pixelformat = format->fmt.pix_mp.pixelformat;
+        bpl = format->fmt.pix_mp.plane_fmt[0].bytesperline;
+    } else {
+        width = format->fmt.pix.width;
+        height = format->fmt.pix.height;
+        pixelformat = format->fmt.pix.pixelformat;
+        bpl = format->fmt.pix.bytesperline;
+    }
 
     switch (pixelformat) {
     case V4L2_PIX_FMT_NV12:
         layer->format = DRM_FORMAT_NV12;
         desc->objects[0].format_modifier = DRM_FORMAT_MOD_LINEAR;
         break;
-#ifdef DRM_FORMAT_MOD_ALLWINNER_TILED
     case V4L2_PIX_FMT_SUNXI_TILED_NV12:
         layer->format = DRM_FORMAT_NV12;
         desc->objects[0].format_modifier = DRM_FORMAT_MOD_ALLWINNER_TILED;
         break;
-#endif
-#if defined(V4L2_PIX_FMT_NV15) && defined(DRM_FORMAT_NV15)
+    case V4L2_PIX_FMT_P010:
+        layer->format = DRM_FORMAT_P010;
+        desc->objects[0].format_modifier = DRM_FORMAT_MOD_LINEAR;
+        break;
     case V4L2_PIX_FMT_NV15:
         layer->format = DRM_FORMAT_NV15;
         desc->objects[0].format_modifier = DRM_FORMAT_MOD_LINEAR;
         break;
-#endif
     case V4L2_PIX_FMT_NV16:
         layer->format = DRM_FORMAT_NV16;
         desc->objects[0].format_modifier = DRM_FORMAT_MOD_LINEAR;
@@ -236,6 +281,14 @@ static int v4l2_request_set_drm_descriptor(V4L2RequestDescriptor *req, struct v4
         desc->objects[0].format_modifier = DRM_FORMAT_MOD_LINEAR;
         break;
 #endif
+    case V4L2_PIX_FMT_NV12_COL128:
+        layer->format = DRM_FORMAT_NV12;
+        desc->objects[0].format_modifier = DRM_FORMAT_MOD_BROADCOM_SAND128_COL_HEIGHT(bpl);
+        break;
+    case V4L2_PIX_FMT_NV12_10_COL128:
+        layer->format = DRM_FORMAT_P030;
+        desc->objects[0].format_modifier = DRM_FORMAT_MOD_BROADCOM_SAND128_COL_HEIGHT(bpl);
+        break;
     default:
         return -1;
     }
@@ -249,11 +302,27 @@ static int v4l2_request_set_drm_descriptor(V4L2RequestDescriptor *req, struct v4
 
     layer->planes[0].object_index = 0;
     layer->planes[0].offset = 0;
-    layer->planes[0].pitch = V4L2_TYPE_IS_MULTIPLANAR(format->type) ? format->fmt.pix_mp.plane_fmt[0].bytesperline : format->fmt.pix.bytesperline;
 
-    layer->planes[1].object_index = 0;
-    layer->planes[1].offset = layer->planes[0].pitch * (V4L2_TYPE_IS_MULTIPLANAR(format->type) ? format->fmt.pix_mp.height : format->fmt.pix.height);
-    layer->planes[1].pitch = layer->planes[0].pitch;
+    /* SAND formats have different pitch and offset semantics */
+    if (pixelformat == V4L2_PIX_FMT_NV12_COL128) {
+        layer->planes[0].pitch = width;
+
+        layer->planes[1].object_index = 0;
+        layer->planes[1].offset = height * 128;
+        layer->planes[1].pitch = width;
+    } else if (pixelformat == V4L2_PIX_FMT_NV12_10_COL128) {
+        layer->planes[0].pitch = width * 2;
+
+        layer->planes[1].object_index = 0;
+        layer->planes[1].offset = height * 128;
+        layer->planes[1].pitch = width * 2;
+    } else {
+        layer->planes[0].pitch = bpl;
+
+        layer->planes[1].object_index = 0;
+        layer->planes[1].offset = layer->planes[0].pitch * height;
+        layer->planes[1].pitch = layer->planes[0].pitch;
+    }
 
     return 0;
 }
