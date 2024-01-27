@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023, CTCaer <ctcaer@gmail.com>
+ * Copyright (c) 2021-2024, CTCaer <ctcaer@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -1236,11 +1236,12 @@ nvv4l2dec_decode(AVCodecContext *avctx, void *data, int *got_frame,
     if (_nvframe.pts != AV_NOPTS_VALUE) {
         avframe->pts = _nvframe.pts;
     } else {
-        avframe->pts = _nvframe.pts;
+        /*! NOTE: Investigate if setting reordered_opaque to pts instead
+         *  is better for no-pts streams compatibility.
+         */
+        avframe->pts = AV_NOPTS_VALUE;
         avframe->reordered_opaque = _nvframe.user_pts;
     }
-
-    avframe->key_frame = 0;
 
     avctx->coded_width = _nvframe.width;
     avctx->coded_height = _nvframe.height;
