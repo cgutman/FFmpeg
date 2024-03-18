@@ -34,6 +34,16 @@
 #define V4L2_PIX_FMT_NV15 v4l2_fourcc('N', 'V', '1', '5')
 #endif
 
+#ifndef fourcc_mod_get_vendor
+#define fourcc_mod_get_vendor(modifier) \
+	(((modifier) >> 56) & 0xff)
+#endif
+
+#ifndef fourcc_mod_is_vendor
+#define fourcc_mod_is_vendor(modifier, vendor) \
+	(fourcc_mod_get_vendor(modifier) == DRM_FORMAT_MOD_VENDOR_## vendor)
+#endif
+
 static const AVClass v4l2_request_context_class = {
     .class_name = "V4L2RequestContext",
     .item_name  = av_default_item_name,
