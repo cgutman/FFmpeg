@@ -543,6 +543,7 @@ static int get_pixel_format(AVCodecContext *avctx)
                      CONFIG_AV1_D3D11VA_HWACCEL * 2 + \
                      CONFIG_AV1_D3D12VA_HWACCEL + \
                      CONFIG_AV1_NVDEC_HWACCEL + \
+                     CONFIG_AV1_V4L2REQUEST_HWACCEL + \
                      CONFIG_AV1_VAAPI_HWACCEL + \
                      CONFIG_AV1_VDPAU_HWACCEL + \
                      CONFIG_AV1_VIDEOTOOLBOX_HWACCEL + \
@@ -579,6 +580,9 @@ static int get_pixel_format(AVCodecContext *avctx)
 #if CONFIG_AV1_VULKAN_HWACCEL
         *fmtp++ = AV_PIX_FMT_VULKAN;
 #endif
+#if CONFIG_AV1_V4L2REQUEST_HWACCEL
+        *fmtp++ = AV_PIX_FMT_DRM_PRIME;
+#endif
         break;
     case AV_PIX_FMT_YUV420P10:
 #if CONFIG_AV1_DXVA2_HWACCEL
@@ -605,6 +609,9 @@ static int get_pixel_format(AVCodecContext *avctx)
 #endif
 #if CONFIG_AV1_VULKAN_HWACCEL
         *fmtp++ = AV_PIX_FMT_VULKAN;
+#endif
+#if CONFIG_AV1_V4L2REQUEST_HWACCEL
+        *fmtp++ = AV_PIX_FMT_DRM_PRIME;
 #endif
         break;
     case AV_PIX_FMT_YUV420P12:
@@ -1566,6 +1573,9 @@ const FFCodec ff_av1_decoder = {
 #endif
 #if CONFIG_AV1_VULKAN_HWACCEL
         HWACCEL_VULKAN(av1),
+#endif
+#if CONFIG_AV1_V4L2REQUEST_HWACCEL
+        HWACCEL_V4L2REQUEST(av1),
 #endif
 
         NULL
