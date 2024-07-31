@@ -32,12 +32,15 @@
 #define MAX_SLICES 256
 
 struct hevc_dxva2_picture_context {
-    DXVA_PicParams_HEVC   pp;
-    DXVA_Qmatrix_HEVC     qm;
-    unsigned              slice_count;
-    DXVA_Slice_HEVC_Short slice_short[MAX_SLICES];
-    const uint8_t         *bitstream;
-    unsigned              bitstream_size;
+    union {
+        DXVA_PicParams_HEVC             pp;
+        ff_DXVA_PicParams_HEVC_RangeExt ppext;
+    };
+    DXVA_Qmatrix_HEVC               qm;
+    unsigned                        slice_count;
+    DXVA_Slice_HEVC_Short           slice_short[MAX_SLICES];
+    const uint8_t                   *bitstream;
+    unsigned                        bitstream_size;
 };
 
 static void fill_picture_entry(DXVA_PicEntry_HEVC *pic,
@@ -58,15 +61,16 @@ static int get_refpic_index(const DXVA_PicParams_HEVC *pp, int surface_index)
 }
 
 void ff_dxva2_hevc_fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *ctx,
-                                    DXVA_PicParams_HEVC *pp)
+                                           ff_DXVA_PicParams_HEVC_RangeExt *ppext)
 {
+    DXVA_PicParams_HEVC *pp = &ppext->params;
     const HEVCContext *h = avctx->priv_data;
     const HEVCFrame *current_picture = h->ref;
     const HEVCSPS *sps = h->ps.sps;
     const HEVCPPS *pps = h->ps.pps;
     int i, j;
 
-    memset(pp, 0, sizeof(*pp));
+    memset(ppext, 0, sizeof(*ppext));
 
     pp->PicWidthInMinCbsY  = sps->min_cb_width;
     pp->PicHeightInMinCbsY = sps->min_cb_height;
@@ -199,6 +203,32 @@ void ff_dxva2_hevc_fill_picture_parameters(const AVCodecContext *avctx, AVDXVACo
     DO_REF_LIST(LT_CURR, RefPicSetLtCurr);
 
     pp->StatusReportFeedbackNumber = 1 + DXVA_CONTEXT_REPORT_ID(avctx, ctx)++;
+
+    if (sps->sps_range_extension_flag) {
+        ppext->transform_skip_rotation_enabled_flag    = sps->transform_skip_rotation_enabled_flag;
+        ppext->transform_skip_context_enabled_flag     = sps->transform_skip_context_enabled_flag;
+        ppext->implicit_rdpcm_enabled_flag             = sps->implicit_rdpcm_enabled_flag;
+        ppext->explicit_rdpcm_enabled_flag             = sps->explicit_rdpcm_enabled_flag;
+        ppext->extended_precision_processing_flag      = sps->extended_precision_processing_flag;
+        ppext->intra_smoothing_disabled_flag           = sps->intra_smoothing_disabled_flag;
+        ppext->persistent_rice_adaptation_enabled_flag = sps->persistent_rice_adaptation_enabled_flag;
+        ppext->high_precision_offsets_enabled_flag     = sps->high_precision_offsets_enabled_flag;
+        ppext->cabac_bypass_alignment_enabled_flag     = sps->cabac_bypass_alignment_enabled_flag;
+    }
+    if (pps->pps_range_extensions_flag) {
+        ppext->cross_component_prediction_enabled_flag = pps->cross_component_prediction_enabled_flag;
+        ppext->chroma_qp_offset_list_enabled_flag      = pps->chroma_qp_offset_list_enabled_flag;
+
+        ppext->diff_cu_chroma_qp_offset_depth            = pps->diff_cu_chroma_qp_offset_depth;
+        ppext->log2_sao_offset_scale_luma                = pps->log2_sao_offset_scale_luma;
+        ppext->log2_sao_offset_scale_chroma              = pps->log2_sao_offset_scale_chroma;
+        ppext->log2_max_transform_skip_block_size_minus2 = pps->log2_max_transform_skip_block_size - 2;
+        ppext->chroma_qp_offset_list_len_minus1          = pps->chroma_qp_offset_list_len_minus1;
+        for (i = 0; i <= pps->chroma_qp_offset_list_len_minus1; i++) {
+            ppext->cb_qp_offset_list[i] = pps->cb_qp_offset_list[i];
+            ppext->cr_qp_offset_list[i] = pps->cr_qp_offset_list[i];
+        }
+    }
 }
 
 void ff_dxva2_hevc_fill_scaling_lists(const AVCodecContext *avctx, AVDXVAContext *ctx, DXVA_Qmatrix_HEVC *qm)
@@ -371,7 +401,7 @@ static int dxva2_hevc_start_frame(AVCodecContext *avctx,
     av_assert0(ctx_pic);
 
     /* Fill up DXVA_PicParams_HEVC */
-    ff_dxva2_hevc_fill_picture_parameters(avctx, ctx, &ctx_pic->pp);
+    ff_dxva2_hevc_fill_picture_parameters(avctx, ctx, &ctx_pic->ppext);
 
     /* Fill up DXVA_Qmatrix_HEVC */
     ff_dxva2_hevc_fill_scaling_lists(avctx, ctx, &ctx_pic->qm);
@@ -410,13 +440,15 @@ static int dxva2_hevc_end_frame(AVCodecContext *avctx)
     HEVCContext *h = avctx->priv_data;
     struct hevc_dxva2_picture_context *ctx_pic = h->ref->hwaccel_picture_private;
     int scale = ctx_pic->pp.dwCodingParamToolFlags & 1;
+    int rext = avctx->profile == AV_PROFILE_HEVC_REXT;
     int ret;
 
     if (ctx_pic->slice_count <= 0 || ctx_pic->bitstream_size <= 0)
         return -1;
 
     ret = ff_dxva2_common_end_frame(avctx, h->ref->frame,
-                                    &ctx_pic->pp, sizeof(ctx_pic->pp),
+                                    &ctx_pic->pp,
+                                    rext ? sizeof(ctx_pic->ppext) : sizeof(ctx_pic->pp),
                                     scale ? &ctx_pic->qm : NULL, scale ? sizeof(ctx_pic->qm) : 0,
                                     commit_bitstream_and_slice_buffer);
     return ret;

@@ -43,6 +43,14 @@ DEFINE_GUID(ff_DXVA2_ModeVC1_D,          0x1b81beA3, 0xa0c7,0x11d3,0xb9,0x84,0x0
 DEFINE_GUID(ff_DXVA2_ModeVC1_D2010,      0x1b81beA4, 0xa0c7,0x11d3,0xb9,0x84,0x00,0xc0,0x4f,0x2e,0x73,0xc5);
 DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main,  0x5b11d51b, 0x2f4c,0x4452,0xbc,0xc3,0x09,0xf2,0xa1,0x16,0x0c,0xc0);
 DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main10,0x107af0e0, 0xef1a,0x4d19,0xab,0xa8,0x67,0xa1,0x63,0x07,0x3d,0x13);
+DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main12,     0x1a72925f, 0x0c2c,0x4f15,0x96,0xfb,0xb1,0x7d,0x14,0x73,0x60,0x3f);
+DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main10_422, 0x0bac4fe5, 0x1532,0x4429,0xa8,0x54,0xf8,0x4d,0xe0,0x49,0x53,0xdb);
+DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main12_422, 0x55bcac81, 0xf311,0x4093,0xa7,0xd0,0x1c,0xbc,0x0b,0x84,0x9b,0xee);
+DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main_444,   0x4008018f, 0xf537,0x4b36,0x98,0xcf,0x61,0xaf,0x8a,0x2c,0x1a,0x33);
+DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main10_Ext, 0x9cc55490, 0xe37c,0x4932,0x86,0x84,0x49,0x20,0xf9,0xf6,0x40,0x9c);
+DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main10_444, 0x0dabeffa, 0x4458,0x4602,0xbc,0x03,0x07,0x95,0x65,0x9d,0x61,0x7c);
+DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main12_444, 0x9798634d, 0xfe9d,0x48e5,0xb4,0xda,0xdb,0xec,0x45,0xb3,0xdf,0x01);
+DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main16,     0xa4fbdbb0, 0xa113,0x482b,0xa2,0x32,0x63,0x5c,0xc0,0x69,0x7f,0x6d);
 DEFINE_GUID(ff_DXVA2_ModeVP9_VLD_Profile0,0x463707f8,0xa1d0,0x4585,0x87,0x6d,0x83,0xaa,0x6d,0x60,0xb8,0x9e);
 DEFINE_GUID(ff_DXVA2_ModeVP9_VLD_10bit_Profile2,0xa4c749ef,0x6ecf,0x48aa,0x84,0x48,0x50,0xa7,0xa1,0x16,0x5f,0xf7);
 DEFINE_GUID(ff_DXVA2_ModeAV1_VLD_Profile0,0xb8be4ccb,0xcf53,0x46ba,0x8d,0x59,0xd6,0xb8,0xa6,0xda,0x5d,0x2a);
@@ -68,6 +76,8 @@ static const int prof_h264_high[]    = {AV_PROFILE_H264_CONSTRAINED_BASELINE,
 static const int prof_hevc_main[]    = {AV_PROFILE_HEVC_MAIN,
                                         AV_PROFILE_UNKNOWN};
 static const int prof_hevc_main10[]  = {AV_PROFILE_HEVC_MAIN_10,
+                                        AV_PROFILE_UNKNOWN};
+static const int prof_hevc_rext[]    = {AV_PROFILE_HEVC_REXT,
                                         AV_PROFILE_UNKNOWN};
 static const int prof_vp9_profile0[] = {AV_PROFILE_VP9_0,
                                         AV_PROFILE_UNKNOWN};
@@ -96,6 +106,9 @@ static const dxva_mode dxva_modes[] = {
     /* HEVC/H.265 */
     { &ff_DXVA2_ModeHEVC_VLD_Main10, AV_CODEC_ID_HEVC, prof_hevc_main10 },
     { &ff_DXVA2_ModeHEVC_VLD_Main,   AV_CODEC_ID_HEVC, prof_hevc_main },
+
+    /* TODO: Proper detection */
+    { &ff_DXVA2_ModeHEVC_VLD_Main10_444, AV_CODEC_ID_HEVC, prof_hevc_rext },
 
     /* VP8/9 */
     { &ff_DXVA2_ModeVP9_VLD_Profile0,       AV_CODEC_ID_VP9, prof_vp9_profile0 },
@@ -458,6 +471,13 @@ static DXGI_FORMAT d3d11va_map_sw_to_hw_format(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_NV12:       return DXGI_FORMAT_NV12;
     case AV_PIX_FMT_P010:       return DXGI_FORMAT_P010;
     case AV_PIX_FMT_YUV420P:    return DXGI_FORMAT_420_OPAQUE;
+    case AV_PIX_FMT_VUYX:       return DXGI_FORMAT_AYUV;
+    case AV_PIX_FMT_YUYV422:    return DXGI_FORMAT_YUY2;
+    case AV_PIX_FMT_Y210:       return DXGI_FORMAT_Y210;
+    case AV_PIX_FMT_XV30:       return DXGI_FORMAT_Y410;
+    case AV_PIX_FMT_P012:       return DXGI_FORMAT_P016;
+    case AV_PIX_FMT_Y212:       return DXGI_FORMAT_Y216;
+    case AV_PIX_FMT_XV36:       return DXGI_FORMAT_Y416;
     default:                    return DXGI_FORMAT_UNKNOWN;
     }
 }
