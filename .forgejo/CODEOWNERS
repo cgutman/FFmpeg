@@ -27,6 +27,7 @@ libavcodec/.*prores.* @lynne
 libavcodec/rangecoder.* @michaelni
 libavcodec/ratecontrol.* @michaelni
 libavcodec/.*siren.* @lynne
+libavcodec/v4l2_request.* @Kwiboo @jernej @knaerzche
 libavcodec/.*vc2.* @lynne
 libavcodec/.*vvc.* @frankplow @NuoMi @jianhuaw
 
