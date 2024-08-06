@@ -51,6 +51,7 @@ libavformat/iamf.* @jamrial
 libavutil/.*crc.* @lynne @michaelni
 libavutil/.*d3d12va.* @jianhuaw
 libavutil/eval.* @michaelni
+libavutil/hwcontext_v4l2request.* @Kwiboo @jernej @knaerzche
 libavutil/iamf.* @jamrial
 libavutil/integer.* @michaelni
 libavutil/lfg.* @michaelni
