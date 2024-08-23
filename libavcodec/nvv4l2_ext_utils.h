@@ -178,7 +178,7 @@ enum v4l2_mpeg_video_h265_profile {
 #define V4L2_H264_SPS_FLAG_FRAME_MBS_ONLY           0x10
 #define V4L2_H264_SPS_FLAG_MB_ADAPTIVE_FRAME_FIELD      0x20
 #define V4L2_H264_SPS_FLAG_DIRECT_8X8_INFERENCE         0x40
-/* struct v4l2_ctrl_h264_sps {
+struct v4l2_ctrl_h264_sps {
     __u8 profile_idc;
     __u8 constraint_set_flags;
     __u8 level_idc;
@@ -197,7 +197,7 @@ enum v4l2_mpeg_video_h265_profile {
     __u16 pic_width_in_mbs_minus1;
     __u16 pic_height_in_map_units_minus1;
     __u8 flags;
-}; */
+};
 
 #define V4L2_H264_PPS_FLAG_ENTROPY_CODING_MODE              0x0001
 #define V4L2_H264_PPS_FLAG_BOTTOM_FIELD_PIC_ORDER_IN_FRAME_PRESENT  0x0002
@@ -207,7 +207,7 @@ enum v4l2_mpeg_video_h265_profile {
 #define V4L2_H264_PPS_FLAG_REDUNDANT_PIC_CNT_PRESENT            0x0020
 #define V4L2_H264_PPS_FLAG_TRANSFORM_8X8_MODE               0x0040
 #define V4L2_H264_PPS_FLAG_PIC_SCALING_MATRIX_PRESENT           0x0080
-/* struct v4l2_ctrl_h264_pps {
+struct v4l2_ctrl_h264_pps {
     __u8 pic_parameter_set_id;
     __u8 seq_parameter_set_id;
     __u8 num_slice_groups_minus1;
@@ -219,19 +219,19 @@ enum v4l2_mpeg_video_h265_profile {
     __s8 chroma_qp_index_offset;
     __s8 second_chroma_qp_index_offset;
     __u8 flags;
-}; */
+};
 
-/* struct v4l2_ctrl_h264_scaling_matrix {
+struct v4l2_ctrl_h264_scaling_matrix {
     __u8 scaling_list_4x4[6][16];
     __u8 scaling_list_8x8[6][64];
-}; */
+};
 
-/* struct v4l2_h264_weight_factors {
+struct v4l2_h264_weight_factors {
     __s8 luma_weight[32];
     __s8 luma_offset[32];
     __s8 chroma_weight[32][2];
     __s8 chroma_offset[32][2];
-}; */
+};
 
 struct v4l2_h264_pred_weight_table {
     __u8 luma_log2_weight_denom;
@@ -289,15 +289,15 @@ struct v4l2_ctrl_h264_slice_param {
 If not set, this entry is unused for reference. */
 #define V4L2_H264_DPB_ENTRY_FLAG_ACTIVE     0x01
 #define V4L2_H264_DPB_ENTRY_FLAG_LONG_TERM  0x02
-/* struct v4l2_h264_dpb_entry { */
-/*    __u32 buf_index; /**< v4l2_buffer index. */
-/*    __u16 frame_num;
-    __u16 pic_num; */
+struct v4l2_h264_dpb_entry {
+    __u32 buf_index; /**< v4l2_buffer index. */
+    __u16 frame_num;
+    __u16 pic_num;
     /** @note `v4l2_buffer.field` specifies this field. */
-/*    __s32 top_field_order_cnt;
-    __s32 bottom_field_order_cnt; */
-/*    __u8 flags; /* V4L2_H264_DPB_ENTRY_FLAG_* */
-/* }; */
+    __s32 top_field_order_cnt;
+    __s32 bottom_field_order_cnt;
+    __u8 flags; /* V4L2_H264_DPB_ENTRY_FLAG_* */
+};
 
 struct v4l2_ctrl_h264_decode_param {
     __u32 num_slices;
