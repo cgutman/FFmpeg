@@ -1588,11 +1588,12 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
                                     vtctx->power_efficient ? kCFBooleanTrue : kCFBooleanFalse);
     }
 
-    if (vtctx->max_ref_frames > 0) {
+    if (vtctx->max_ref_frames > 0 || avctx->refs > 0) {
+        int max_ref_frames = avctx->refs > 0 ? avctx->refs : vtctx->max_ref_frames;
         status = set_encoder_int_property_or_log(avctx,
                                                  compat_keys.kVTCompressionPropertyKey_ReferenceBufferCount,
                                                  "max_ref_frames",
-                                                 vtctx->max_ref_frames);
+                                                 max_ref_frames);
 
         if (status != 0) {
             return status;
@@ -2940,6 +2941,7 @@ static const FFCodecDefault vt_defaults[] = {
         {"b",    "0"},
         {"qmin", "-1"},
         {"qmax", "-1"},
+        {"refs", "0"},
         {NULL},
 };
 
