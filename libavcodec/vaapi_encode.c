@@ -1276,7 +1276,10 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
         TRY_RC_MODE(RC_MODE_CBR, 0);
 
     if (avctx->bit_rate > 0) {
-        TRY_RC_MODE(RC_MODE_AVBR, 0);
+        // AVBR does not enforce RC buffer constraints
+        if (!avctx->rc_buffer_size && !avctx->rc_initial_buffer_occupancy)
+            TRY_RC_MODE(RC_MODE_AVBR, 0);
+
         TRY_RC_MODE(RC_MODE_VBR, 0);
         TRY_RC_MODE(RC_MODE_CBR, 0);
     } else {
