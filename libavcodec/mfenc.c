@@ -64,6 +64,7 @@ typedef struct MFContext {
     int opt_enc_quality;
     int opt_enc_scenario;
     int opt_enc_hw;
+    int opt_enc_lowlatency;
     AVD3D11VADeviceContext* device_hwctx;
 } MFContext;
 
@@ -866,6 +867,9 @@ static int mf_encv_output_adjust(AVCodecContext *avctx, IMFMediaType *type)
 
         if (c->opt_enc_scenario >= 0)
             ICodecAPI_SetValue(c->codec_api, &ff_CODECAPI_AVScenarioInfo, FF_VAL_VT_UI4(c->opt_enc_scenario));
+
+        if (c->opt_enc_lowlatency)
+            ICodecAPI_SetValue(c->codec_api, &ff_CODECAPI_AVLowLatencyMode, FF_VAL_VT_UI4(1));
     }
 
     return 0;
@@ -1445,6 +1449,7 @@ static const AVOption venc_opts[] = {
 
     {"quality",       "Quality", OFFSET(opt_enc_quality), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 100, VE},
     {"hw_encoding",   "Force hardware encoding", OFFSET(opt_enc_hw), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, VE},
+    {"low_latency",   "Low latency mode", OFFSET(opt_enc_lowlatency), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, VE},
     {NULL}
 };
 
