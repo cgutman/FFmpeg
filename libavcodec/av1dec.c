@@ -664,11 +664,12 @@ static int get_pixel_format(AVCodecContext *avctx)
     *fmtp++ = pix_fmt;
     *fmtp = AV_PIX_FMT_NONE;
 
-    for (int i = 0; pix_fmts[i] != pix_fmt; i++)
-        if (pix_fmts[i] == avctx->pix_fmt) {
-            s->pix_fmt = pix_fmt;
-            return 1;
-        }
+    if (s->pix_fmt != AV_PIX_FMT_NONE)
+        for (int i = 0; pix_fmts[i] != pix_fmt; i++)
+            if (pix_fmts[i] == avctx->pix_fmt) {
+                s->pix_fmt = pix_fmt;
+                return 1;
+            }
 
     ret = ff_get_format(avctx, pix_fmts);
 
