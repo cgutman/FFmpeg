@@ -34,6 +34,46 @@
 #include "hwcontext_v4l2request_internal.h"
 #include "mem.h"
 
+#ifndef V4L2_PIX_FMT_NV15
+#define V4L2_PIX_FMT_NV15 v4l2_fourcc('N', 'V', '1', '5')
+#endif
+
+#ifndef V4L2_PIX_FMT_NV20
+#define V4L2_PIX_FMT_NV20 v4l2_fourcc('N', 'V', '2', '0')
+#endif
+
+#ifndef DRM_FORMAT_NV20
+#define DRM_FORMAT_NV20 fourcc_code('N', 'V', '2', '0')
+#endif
+
+#ifndef DRM_FORMAT_P030
+#define DRM_FORMAT_P030 fourcc_code('P', '0', '3', '0')
+#endif
+
+#ifndef V4L2_PIX_FMT_NV12MT_COL128
+#define V4L2_PIX_FMT_NV12MT_COL128 v4l2_fourcc('N', 'c', '1', '2')
+#endif
+
+#ifndef V4L2_PIX_FMT_NV12MT_10_COL128
+#define V4L2_PIX_FMT_NV12MT_10_COL128 v4l2_fourcc('N', 'c', '3', '0')
+#endif
+
+#ifndef V4L2_PIX_FMT_NV12_COL128
+#define V4L2_PIX_FMT_NV12_COL128 v4l2_fourcc('N', 'C', '1', '2')
+#endif
+
+#ifndef V4L2_PIX_FMT_NV12_10_COL128
+#define V4L2_PIX_FMT_NV12_10_COL128 v4l2_fourcc('N', 'C', '3', '0')
+#endif
+
+#ifndef V4L2_PIX_FMT_YUV420_8_AFBC_16X16_SPLIT
+#define V4L2_PIX_FMT_YUV420_8_AFBC_16X16_SPLIT v4l2_fourcc('A', 'S', '1', '2')
+#endif
+
+#ifndef V4L2_PIX_FMT_YUV420_10_AFBC_16X16_SPLIT
+#define V4L2_PIX_FMT_YUV420_10_AFBC_16X16_SPLIT v4l2_fourcc('A', 'S', '0', '1')
+#endif
+
 typedef struct V4L2RequestVideoDecoder {
     dev_t media_dev;
     dev_t video_dev;
@@ -66,26 +106,13 @@ static const struct {
     uint32_t bit_depth;
 } v4l2request_capture_pixelformats[] = {
     { V4L2_PIX_FMT_NV12, AV_PIX_FMT_NV12, DRM_FORMAT_NV12, DRM_FORMAT_MOD_LINEAR, 8 },
-#if defined(V4L2_PIX_FMT_NV12_32L32)
     { V4L2_PIX_FMT_NV12_32L32, AV_PIX_FMT_YUV420P, DRM_FORMAT_NV12, DRM_FORMAT_MOD_ALLWINNER_TILED, 8 },
-#endif
-#if defined(V4L2_PIX_FMT_NV15) && defined(DRM_FORMAT_NV15)
     { V4L2_PIX_FMT_NV15, AV_PIX_FMT_YUV420P10, DRM_FORMAT_NV15, DRM_FORMAT_MOD_LINEAR, 10 },
-#endif
     { V4L2_PIX_FMT_NV16, AV_PIX_FMT_NV16, DRM_FORMAT_NV16, DRM_FORMAT_MOD_LINEAR, 8 },
-#if defined(V4L2_PIX_FMT_NV20) && defined(DRM_FORMAT_NV20)
     { V4L2_PIX_FMT_NV20, AV_PIX_FMT_YUV422P10, DRM_FORMAT_NV20, DRM_FORMAT_MOD_LINEAR, 10 },
-#endif
-#if defined(V4L2_PIX_FMT_P010) && defined(DRM_FORMAT_P010)
     { V4L2_PIX_FMT_P010, AV_PIX_FMT_P010, DRM_FORMAT_P010, DRM_FORMAT_MOD_LINEAR, 10 },
-#endif
-#if defined(V4L2_PIX_FMT_NV12MT_COL128) && defined(V4L2_PIX_FMT_NV12MT_10_COL128)
     { V4L2_PIX_FMT_NV12MT_COL128, AV_PIX_FMT_YUV420P, DRM_FORMAT_NV12, DRM_FORMAT_MOD_BROADCOM_SAND128, 8 },
-#if defined(DRM_FORMAT_P030)
     { V4L2_PIX_FMT_NV12MT_10_COL128, AV_PIX_FMT_YUV420P10, DRM_FORMAT_P030, DRM_FORMAT_MOD_BROADCOM_SAND128, 10 },
-#endif
-#endif
-#if defined(V4L2_PIX_FMT_YUV420_8_AFBC_16X16_SPLIT)
     {
         .pixelformat = V4L2_PIX_FMT_YUV420_8_AFBC_16X16_SPLIT,
         .sw_format = AV_PIX_FMT_YUV420P,
@@ -95,8 +122,6 @@ static const struct {
                                                    AFBC_FORMAT_MOD_SPLIT),
         .bit_depth = 8,
     },
-#endif
-#if defined(V4L2_PIX_FMT_YUV420_10_AFBC_16X16_SPLIT)
     {
         .pixelformat = V4L2_PIX_FMT_YUV420_10_AFBC_16X16_SPLIT,
         .sw_format = AV_PIX_FMT_YUV420P10,
@@ -106,13 +131,8 @@ static const struct {
                                                    AFBC_FORMAT_MOD_SPLIT),
         .bit_depth = 10,
     },
-#endif
-#if defined(V4L2_PIX_FMT_NV12_COL128) && defined(V4L2_PIX_FMT_NV12_10_COL128)
     { V4L2_PIX_FMT_NV12_COL128, AV_PIX_FMT_YUV420P, DRM_FORMAT_NV12, DRM_FORMAT_MOD_BROADCOM_SAND128, 8 },
-#if defined(DRM_FORMAT_P030)
     { V4L2_PIX_FMT_NV12_10_COL128, AV_PIX_FMT_YUV420P10, DRM_FORMAT_P030, DRM_FORMAT_MOD_BROADCOM_SAND128, 10 },
-#endif
-#endif
 };
 
 static int v4l2request_set_drm_descriptor(AVDRMFrameDescriptor *desc,
