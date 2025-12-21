@@ -34,6 +34,18 @@
 #include "hwcontext_v4l2request_internal.h"
 #include "mem.h"
 
+#ifndef V4L2_PIX_FMT_NV15
+#define V4L2_PIX_FMT_NV15 v4l2_fourcc('N', 'V', '1', '5')
+#endif
+
+#ifndef V4L2_PIX_FMT_NV20
+#define V4L2_PIX_FMT_NV20 v4l2_fourcc('N', 'V', '2', '0')
+#endif
+
+#ifndef DRM_FORMAT_NV20
+#define DRM_FORMAT_NV20 fourcc_code('N', 'V', '2', '0')
+#endif
+
 typedef struct V4L2RequestVideoDecoder {
     dev_t media_dev;
     dev_t video_dev;
@@ -66,19 +78,11 @@ static const struct {
     uint32_t bit_depth;
 } v4l2request_capture_pixelformats[] = {
     { V4L2_PIX_FMT_NV12, AV_PIX_FMT_NV12, DRM_FORMAT_NV12, DRM_FORMAT_MOD_LINEAR, 8 },
-#if defined(V4L2_PIX_FMT_NV12_32L32)
     { V4L2_PIX_FMT_NV12_32L32, AV_PIX_FMT_YUV420P, DRM_FORMAT_NV12, DRM_FORMAT_MOD_ALLWINNER_TILED, 8 },
-#endif
-#if defined(V4L2_PIX_FMT_NV15) && defined(DRM_FORMAT_NV15)
     { V4L2_PIX_FMT_NV15, AV_PIX_FMT_YUV420P10, DRM_FORMAT_NV15, DRM_FORMAT_MOD_LINEAR, 10 },
-#endif
     { V4L2_PIX_FMT_NV16, AV_PIX_FMT_NV16, DRM_FORMAT_NV16, DRM_FORMAT_MOD_LINEAR, 8 },
-#if defined(V4L2_PIX_FMT_NV20) && defined(DRM_FORMAT_NV20)
     { V4L2_PIX_FMT_NV20, AV_PIX_FMT_YUV422P10, DRM_FORMAT_NV20, DRM_FORMAT_MOD_LINEAR, 10 },
-#endif
-#if defined(V4L2_PIX_FMT_P010) && defined(DRM_FORMAT_P010)
     { V4L2_PIX_FMT_P010, AV_PIX_FMT_P010, DRM_FORMAT_P010, DRM_FORMAT_MOD_LINEAR, 10 },
-#endif
 };
 
 static int v4l2request_set_drm_descriptor(AVDRMFrameDescriptor *desc,
