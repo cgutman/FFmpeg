@@ -281,6 +281,8 @@ int ff_v4l2_m2m_codec_end(V4L2m2mPriv *priv)
 
     ff_v4l2_context_release(&s->output);
 
+    av_buffer_unref(&s->device_ref);
+
     s->self_ref = NULL;
     av_refstruct_unref(&priv->context);
 

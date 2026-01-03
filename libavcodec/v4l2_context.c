@@ -493,6 +493,7 @@ unmap:
                     "  2. drmIoctl(.., DRM_IOCTL_GEM_CLOSE,... )\n");
     }
 
+    av_buffer_unref(&ctx->frames_ref);
     return ret;
 }
 
