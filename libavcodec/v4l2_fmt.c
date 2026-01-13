@@ -44,6 +44,7 @@ static const struct fmt_conversion {
     { AV_FMT(0RGB),        AV_CODEC(RAWVIDEO),    V4L2_FMT(RGB32) },
     { AV_FMT(GRAY8),       AV_CODEC(RAWVIDEO),    V4L2_FMT(GREY) },
     { AV_FMT(YUV420P),     AV_CODEC(RAWVIDEO),    V4L2_FMT(YUV420) },
+    { AV_FMT(YUV420P),     AV_CODEC(RAWVIDEO),    V4L2_FMT(YUV420M) },
     { AV_FMT(YUYV422),     AV_CODEC(RAWVIDEO),    V4L2_FMT(YUYV) },
     { AV_FMT(UYVY422),     AV_CODEC(RAWVIDEO),    V4L2_FMT(UYVY) },
     { AV_FMT(YUV422P),     AV_CODEC(RAWVIDEO),    V4L2_FMT(YUV422P) },
@@ -51,6 +52,10 @@ static const struct fmt_conversion {
     { AV_FMT(YUV410P),     AV_CODEC(RAWVIDEO),    V4L2_FMT(YUV410) },
     { AV_FMT(YUV410P),     AV_CODEC(RAWVIDEO),    V4L2_FMT(YVU410) },
     { AV_FMT(NV12),        AV_CODEC(RAWVIDEO),    V4L2_FMT(NV12) },
+    { AV_FMT(NV21),        AV_CODEC(RAWVIDEO),    V4L2_FMT(NV21) },
+    { AV_FMT(NV16),        AV_CODEC(RAWVIDEO),    V4L2_FMT(NV16) },
+    { AV_FMT(NV24),        AV_CODEC(RAWVIDEO),    V4L2_FMT(NV24) },
+    { AV_FMT(NV42),        AV_CODEC(RAWVIDEO),    V4L2_FMT(NV42) },
     { AV_FMT(NONE),        AV_CODEC(MJPEG),       V4L2_FMT(MJPEG) },
     { AV_FMT(NONE),        AV_CODEC(MJPEG),       V4L2_FMT(JPEG) },
 #ifdef V4L2_PIX_FMT_SRGGB8
@@ -71,8 +76,41 @@ static const struct fmt_conversion {
 #ifdef V4L2_PIX_FMT_YUV420M
     { AV_FMT(YUV420P),     AV_CODEC(RAWVIDEO),    V4L2_FMT(YUV420M) },
 #endif
+#ifdef V4L2_PIX_FMT_YUV422M
+    { AV_FMT(YUV422P),     AV_CODEC(RAWVIDEO),    V4L2_FMT(YUV422M) },
+#endif
+#ifdef V4L2_PIX_FMT_YUV444M
+    { AV_FMT(YUV444P),     AV_CODEC(RAWVIDEO),    V4L2_FMT(YUV444M) },
+#endif
+#ifdef V4L2_PIX_FMT_AYUV32
+    { AV_FMT(AYUV),        AV_CODEC(RAWVIDEO),    V4L2_FMT(AYUV32) },
+#endif
+#ifdef V4L2_PIX_FMT_VUYA32
+    { AV_FMT(VUYA),        AV_CODEC(RAWVIDEO),    V4L2_FMT(VUYA32) },
+#endif
+#ifdef V4L2_PIX_FMT_VUYX32
+    { AV_FMT(VUYX),        AV_CODEC(RAWVIDEO),    V4L2_FMT(VUYX32) },
+#endif
 #ifdef V4L2_PIX_FMT_NV16M
     { AV_FMT(NV16),        AV_CODEC(RAWVIDEO),    V4L2_FMT(NV16M) },
+#endif
+#ifdef V4L2_PIX_FMT_P010
+    { AV_FMT(P010),        AV_CODEC(RAWVIDEO),    V4L2_FMT(P010) },
+#endif
+#ifdef V4L2_PIX_FMT_P012
+    { AV_FMT(P012),        AV_CODEC(RAWVIDEO),    V4L2_FMT(P012) },
+#endif
+#ifdef V4L2_PIX_FMT_P012M
+    { AV_FMT(P012),        AV_CODEC(RAWVIDEO),    V4L2_FMT(P012M) },
+#endif
+#ifdef V4L2_PIX_FMT_Y210
+    { AV_FMT(Y210),        AV_CODEC(RAWVIDEO),    V4L2_FMT(Y210) },
+#endif
+#ifdef V4L2_PIX_FMT_Y212
+    { AV_FMT(Y212),        AV_CODEC(RAWVIDEO),    V4L2_FMT(Y212) },
+#endif
+#ifdef V4L2_PIX_FMT_Y216
+    { AV_FMT(Y216),        AV_CODEC(RAWVIDEO),    V4L2_FMT(Y216) },
 #endif
 #ifdef V4L2_PIX_FMT_H263
     { AV_FMT(NONE),        AV_CODEC(H263),        V4L2_FMT(H263) },

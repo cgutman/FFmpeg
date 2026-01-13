@@ -263,9 +263,27 @@ static uint8_t * v4l2_get_drm_frame(V4L2Buffer *avbuf)
 
     case AV_PIX_FMT_NV12:
     case AV_PIX_FMT_NV21:
+    case AV_PIX_FMT_NV16:
+    case AV_PIX_FMT_P010:
+    case AV_PIX_FMT_P012:
 
-        layer->format = avbuf->context->av_pix_fmt == AV_PIX_FMT_NV12 ?
-            DRM_FORMAT_NV12 : DRM_FORMAT_NV21;
+        switch (avbuf->context->av_pix_fmt) {
+        case AV_PIX_FMT_NV12:
+            layer->format = DRM_FORMAT_NV12;
+            break;
+        case AV_PIX_FMT_NV21:
+            layer->format = DRM_FORMAT_NV21;
+            break;
+        case AV_PIX_FMT_NV16:
+            layer->format = DRM_FORMAT_NV16;
+            break;
+        case AV_PIX_FMT_P010:
+            layer->format = DRM_FORMAT_P010;
+            break;
+        case AV_PIX_FMT_P012:
+            layer->format = DRM_FORMAT_P012;
+            break;
+        }
 
         if (avbuf->num_planes > 1)
             break;
@@ -276,6 +294,22 @@ static uint8_t * v4l2_get_drm_frame(V4L2Buffer *avbuf)
         layer->planes[1].offset = avbuf->plane_info[0].bytesperline *
             avbuf->context->format.fmt.pix.height;
         layer->planes[1].pitch = avbuf->plane_info[0].bytesperline;
+        break;
+
+    case AV_PIX_FMT_NV24:
+    case AV_PIX_FMT_NV42:
+         layer->format = avbuf->context->av_pix_fmt == AV_PIX_FMT_NV24 ?
+            DRM_FORMAT_NV24 : DRM_FORMAT_NV42;
+
+        if (avbuf->num_planes > 1)
+            break;
+
+        layer->nb_planes = 2;
+
+        layer->planes[1].object_index = 0;
+        layer->planes[1].offset = avbuf->plane_info[0].bytesperline *
+            avbuf->context->format.fmt.pix.height;
+        layer->planes[1].pitch = avbuf->plane_info[0].bytesperline << 1;
         break;
 
     case AV_PIX_FMT_YUV420P:
@@ -297,6 +331,48 @@ static uint8_t * v4l2_get_drm_frame(V4L2Buffer *avbuf)
             ((avbuf->plane_info[0].bytesperline *
               avbuf->context->format.fmt.pix.height) >> 2);
         layer->planes[2].pitch = avbuf->plane_info[0].bytesperline >> 1;
+        break;
+
+    case AV_PIX_FMT_YUV422P:
+
+        layer->format = DRM_FORMAT_YUV422;
+
+        if (avbuf->num_planes > 1)
+            break;
+
+        layer->nb_planes = 3;
+
+        layer->planes[1].object_index = 0;
+        layer->planes[1].offset = avbuf->plane_info[0].bytesperline *
+            avbuf->context->format.fmt.pix.height;
+        layer->planes[1].pitch = avbuf->plane_info[0].bytesperline >> 1;
+
+        layer->planes[2].object_index = 0;
+        layer->planes[2].offset = layer->planes[1].offset +
+            ((avbuf->plane_info[0].bytesperline *
+              avbuf->context->format.fmt.pix.height) >> 1);
+        layer->planes[2].pitch = avbuf->plane_info[0].bytesperline >> 1;
+        break;
+
+    case AV_PIX_FMT_YUV444P:
+
+        layer->format = DRM_FORMAT_YUV444;
+
+        if (avbuf->num_planes > 1)
+            break;
+
+        layer->nb_planes = 3;
+
+        layer->planes[1].object_index = 0;
+        layer->planes[1].offset = avbuf->plane_info[0].bytesperline *
+            avbuf->context->format.fmt.pix.height;
+        layer->planes[1].pitch = avbuf->plane_info[0].bytesperline;
+
+        layer->planes[2].object_index = 0;
+        layer->planes[2].offset = layer->planes[1].offset +
+            (avbuf->plane_info[0].bytesperline *
+             avbuf->context->format.fmt.pix.height);
+        layer->planes[2].pitch = avbuf->plane_info[0].bytesperline;
         break;
 
     default:
@@ -473,9 +549,20 @@ static int v4l2_buffer_buf_to_swframe(AVFrame *frame, V4L2Buffer *avbuf)
     switch (avbuf->context->av_pix_fmt) {
     case AV_PIX_FMT_NV12:
     case AV_PIX_FMT_NV21:
+    case AV_PIX_FMT_NV16:
+    case AV_PIX_FMT_P010:
+    case AV_PIX_FMT_P012:
         if (avbuf->num_planes > 1)
             break;
         frame->linesize[1] = avbuf->plane_info[0].bytesperline;
+        frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
+        break;
+
+    case AV_PIX_FMT_NV24:
+    case AV_PIX_FMT_NV42:
+        if (avbuf->num_planes > 1)
+            break;
+        frame->linesize[1] = avbuf->plane_info[0].bytesperline << 1;
         frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
         break;
 
@@ -486,6 +573,24 @@ static int v4l2_buffer_buf_to_swframe(AVFrame *frame, V4L2Buffer *avbuf)
         frame->linesize[2] = avbuf->plane_info[0].bytesperline >> 1;
         frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
         frame->data[2] = frame->data[1] + ((avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height) >> 2);
+        break;
+
+    case AV_PIX_FMT_YUV422P:
+        if (avbuf->num_planes > 1)
+            break;
+        frame->linesize[1] = avbuf->plane_info[0].bytesperline >> 1;
+        frame->linesize[2] = avbuf->plane_info[0].bytesperline >> 1;
+        frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
+        frame->data[2] = frame->data[1] + ((avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height) >> 1);
+        break;
+
+    case AV_PIX_FMT_YUV444P:
+        if (avbuf->num_planes > 1)
+            break;
+        frame->linesize[1] = avbuf->plane_info[0].bytesperline;
+        frame->linesize[2] = avbuf->plane_info[0].bytesperline;
+        frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
+        frame->data[2] = frame->data[1] + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
         break;
 
     default:
@@ -526,6 +631,9 @@ static int v4l2_buffer_swframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
     case V4L2_PIX_FMT_NV12MT:
     case V4L2_PIX_FMT_NV16M:
     case V4L2_PIX_FMT_NV61M:
+#ifdef V4L2_PIX_FMT_P012M
+    case V4L2_PIX_FMT_P012M:
+#endif
         is_planar_format = 1;
     }
 
