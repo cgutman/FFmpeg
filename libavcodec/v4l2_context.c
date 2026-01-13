@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
+#include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavcodec/avcodec.h"
 #include "decode.h"
@@ -116,10 +117,10 @@ static inline int v4l2_get_framesize_compressed(V4L2Context* ctx, int width, int
     int size;
 
     if (s->avctx && av_codec_is_decoder(s->avctx->codec))
-        return ((width * height * 3 / 2) / 2) + 128;
+        return av_image_get_buffer_size(ctx->av_pix_fmt, width, height, 1) + 128;
 
     /* encoder */
-    size = FFALIGN(height, 32) * FFALIGN(width, 32) * 3 / 2 / 2;
+    size = av_image_get_buffer_size(ctx->av_pix_fmt, FFALIGN(width, 32), FFALIGN(height, 32), 1);
     return FFALIGN(size, SZ_4K);
 }
 
