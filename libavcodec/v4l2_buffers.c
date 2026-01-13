@@ -337,9 +337,20 @@ static int v4l2_buffer_buf_to_swframe(AVFrame *frame, V4L2Buffer *avbuf)
     switch (avbuf->context->av_pix_fmt) {
     case AV_PIX_FMT_NV12:
     case AV_PIX_FMT_NV21:
+    case AV_PIX_FMT_NV16:
+    case AV_PIX_FMT_P010:
+    case AV_PIX_FMT_P012:
         if (avbuf->num_planes > 1)
             break;
         frame->linesize[1] = avbuf->plane_info[0].bytesperline;
+        frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
+        break;
+
+    case AV_PIX_FMT_NV24:
+    case AV_PIX_FMT_NV42:
+        if (avbuf->num_planes > 1)
+            break;
+        frame->linesize[1] = avbuf->plane_info[0].bytesperline << 1;
         frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
         break;
 
@@ -350,6 +361,24 @@ static int v4l2_buffer_buf_to_swframe(AVFrame *frame, V4L2Buffer *avbuf)
         frame->linesize[2] = avbuf->plane_info[0].bytesperline >> 1;
         frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
         frame->data[2] = frame->data[1] + ((avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height) >> 2);
+        break;
+
+    case AV_PIX_FMT_YUV422P:
+        if (avbuf->num_planes > 1)
+            break;
+        frame->linesize[1] = avbuf->plane_info[0].bytesperline >> 1;
+        frame->linesize[2] = avbuf->plane_info[0].bytesperline >> 1;
+        frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
+        frame->data[2] = frame->data[1] + ((avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height) >> 1);
+        break;
+
+    case AV_PIX_FMT_YUV444P:
+        if (avbuf->num_planes > 1)
+            break;
+        frame->linesize[1] = avbuf->plane_info[0].bytesperline;
+        frame->linesize[2] = avbuf->plane_info[0].bytesperline;
+        frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
+        frame->data[2] = frame->data[1] + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
         break;
 
     default:
@@ -390,6 +419,9 @@ static int v4l2_buffer_swframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
     case V4L2_PIX_FMT_NV12MT:
     case V4L2_PIX_FMT_NV16M:
     case V4L2_PIX_FMT_NV61M:
+#ifdef V4L2_PIX_FMT_P012M
+    case V4L2_PIX_FMT_P012M:
+#endif
         is_planar_format = 1;
     }
 
